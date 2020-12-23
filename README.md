@@ -1,5 +1,8 @@
 # Software-Renderer
  This is a Software implemented graphics pipeline/ray-tracing system.
+ If you are interesting or have any question please email me or make a issue, I will try my best to help you!
+ The logistic of algorithms is based on book:Fundamental of Computer Graphics. 
+ 
 ### 1.1 Software-implemented simple ray-tracing system  
 > + Model transformation:Rotation, Scale, Translate in x, y, z direction, Reset Object position
 > + Camera transformation: movement, zoom in zoom out
@@ -52,11 +55,15 @@
 - Visual Studio 2017;
 - OpenFrameworks v0.11.0;
 - Multi-thread Acceleration: With Multi-thread provided by C++11
+- I would personally recommend run this code on a CPU no worse than i5-6300, otherwise it's too slow to debug or see the animation.
 ### How to setup the code
 There are two ways to setup the code:
 > 1. You can open the corresponding xxxx.sln in vs-studio-project folder (If you have openframeworks with visual studio this should work).
 > 2. Or you can create a new openframeworks project in visual studio, and add all the source files into your new project. All the source files are in the /vs-studio-project/assignment1-simple_raytracing/src directoty. 
-> 3. In the advanced ray tracing / graphics pipeline/ simple  ray tracing directories, there are xxx.exe that is possible to directly run on your computer and show you this work.
+> 3. In the advanced ray tracing / graphics pipeline/ simple  ray tracing directories, there are xxx.exe that is possible to directly run on your computer and show you this work.  
+
 ### Reference  
 - This is also course assginments from KAUST University: CS-248: COMPUTER GRAPHICS  by prof IVAN VIOLA.
 - Kaust Beacon obj is provided by Tayyab Mubeen and is downloadable from: https://grabcad.com/library/kaust-beacon-1. For the purposes of this assignment it has been converted to an OBJ file format using the Meshlab software.
+- book:Fundamental of Computer Graphics.
+
