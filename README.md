@@ -37,6 +37,7 @@
 | -----| ----- |
 |Objects transformation|The Advanced ray-tracing system will change object who is selected one by one, but not as  simple ray-tracing system that you can use mouse to click any object to select that object.Instruction Keys are the same as Simple ray-tracing system|  
 | Load/Store 	Models matrix| You can load several Objects into a scene, after you place them well, press F2 to store their model matixes, and you can use F3 to load models'model matixes any time you want. |
+| Increase quality| press M to turn on/off supersampling and soft shadowing |
 #### 3.3 Graphics Pipeline system
 ![alt img-Graphics Pipeline](image/kaustbecon.png)
 
