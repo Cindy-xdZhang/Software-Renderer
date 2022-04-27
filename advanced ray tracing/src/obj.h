@@ -58,7 +58,7 @@ public:
 	 ShadingMaterial Material();
 	void initModelMatrix();
 	void updateModelMatrix(Matrix4& right);
-	Surface::Surface();
+	Surface();
 };
 
 class Plane :public Surface
@@ -172,7 +172,7 @@ public:
 	BVHnode* pBVHmesh;
 	MeshObjects() = default;
 	MeshObjects(ShareVertexMesh p);
-	intersectInfo MeshObjects::intersection(const BVHnode * const ROOT, const Ray& Ray);
+	intersectInfo intersection(const BVHnode * const ROOT, const Ray& Ray);
 };
 
 class BvhTopLevelStructure {
@@ -193,7 +193,8 @@ private:
 			float zmin = (float)INT_MAX, zmax = (float)-INT_MAX;
 			BoundingBox restul = { xmax,xmin, ymax,ymin, zmax,zmin };
 			for (auto vid : localMeshidsList) {
-				restul = CombineBoundingBoxes(restul, Meshes[vid].pBVHmesh->LocalBoundingBox* Meshes[vid].pModleMatrix);
+				BoundingBox temp = Meshes[vid].pBVHmesh->LocalBoundingBox * Meshes[vid].pModleMatrix;
+				restul = CombineBoundingBoxes(restul, temp);
 			}
 			return restul;
 		};
@@ -316,7 +317,7 @@ public:
 
 
 	}
-	inline intersectInfo BvhTopLevelStructure::intersection(BVHnode*ROOT,const Ray& cRay) {
+	inline intersectInfo intersection(BVHnode*ROOT,const Ray& cRay) {
 		if (ROOT->LocalBoundingBox.intersection(cRay) == false) return { -100.0f, };
 
 		if (ROOT->left == NULL) {// top level mesh tree LEAF->go into local mesh tree root
@@ -381,12 +382,12 @@ public:
 	int Len() const {
 		return object_count;
 	}
-	unsigned char* Object_List::GetPointer(int id) const;
-	unsigned char  Object_List::GetType(int id) const;
-	void Object_List::AddObj(Plane& spo);
-	void Object_List::AddObj(MeshObjects& spo);
-	void Object_List::AddObj(BvhTopLevelStructure& spo);
-	bool Object_List::OccludeByOther(int skipid, Ray  cRay)const;
+	unsigned char* GetPointer(int id) const;
+	unsigned char  GetType(int id) const;
+	void AddObj(Plane& spo);
+	void AddObj(MeshObjects& spo);
+	void AddObj(BvhTopLevelStructure& spo);
+	bool OccludeByOther(int skipid, Ray  cRay)const;
 };
 
 struct VisibleLightSource {

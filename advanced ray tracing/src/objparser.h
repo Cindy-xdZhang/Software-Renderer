@@ -12,7 +12,7 @@
 class OBjReader {
 private:
 	void readVertexs(std::string Filepath);
-	void OBjReader::CalculatePerfaceAverageNormal();
+	void CalculatePerfaceAverageNormal();
 public:
 	//for object order rendering
 	std::vector<mVec3> Vertexes;
@@ -26,10 +26,10 @@ public:
 	std::vector<VertexInMesh> VertexInMeshs;
 	std::vector<TriangleInMesh> TriangleswithAttibIdx;
 
-	void OBjReader::readTriangleObjFile(std::string Filepath);
+	void readTriangleObjFile(std::string Filepath);
 	//f a b c d可能是四个点也可能是三个点
-	ShareVertexMesh OBjReader::readObj2ShareMesh(std::string Filepath);
+	ShareVertexMesh readObj2ShareMesh(std::string Filepath);
 
-	void OBjReader::Load_CalculateNormal_Store(std::string inputFilepath, std::string outputFilepath);
-	void OBjReader::Load_CalculateTextureCoordinate_Store(std::string inputFilepath, std::string outputFilepath);
+	void Load_CalculateNormal_Store(std::string inputFilepath, std::string outputFilepath);
+	void Load_CalculateTextureCoordinate_Store(std::string inputFilepath, std::string outputFilepath);
 };

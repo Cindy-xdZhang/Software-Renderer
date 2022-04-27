@@ -432,7 +432,7 @@ mVec4 Matrix4::operator*(mVec4 V)const {
 }
 
 
-//制造一个单位矩阵
+
 Matrix4  eye(int n) {
 	Matrix4 A(0.0f);
 	for (int i = 0; i < 4; i++) {

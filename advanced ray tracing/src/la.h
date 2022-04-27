@@ -100,10 +100,10 @@ public:
 	inline Triangle(mVec3 a, mVec3 b, mVec3 c) :a(a), b(b), c(c) {
 	}
 	Triangle() = default;
-	 mVec2<float> Triangle::PointIsInTriangle(mVec3 p);
-	 mVec3 Triangle::Normal();
-	 mVec3 Triangle::Normal(mVec3 dir);
-	 mVec3 Triangle::Center();
+	mVec2<float> PointIsInTriangle(mVec3 p);
+	 mVec3 Normal();
+	 mVec3 Normal(mVec3 dir);
+	 mVec3 Center();
 
 };
 

@@ -2,7 +2,7 @@
 #include "la.h"
 #include "matrix.h"
 #include"Parameters.h"
-#include "obj.hpp"
+#include "obj.h"
 class Camera
 {
 

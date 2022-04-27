@@ -1,15 +1,16 @@
 # Software-Renderer
- This is a Software implemented graphics pipeline/ray-tracing system.
- If you are interesting or have any question please email me or make a issue, I will try my best to help you!
- The logistic of algorithms is based on book:Fundamental of Computer Graphics. 
+ This is a Software implemented graphics pipeline/ray-tracing system, based on c++(14) and openframework.
+
+It consists of three independent systems.
+ [todo: get rid of openframework library.] 
  
-### 1.1 Software-implemented simple ray-tracing system  
+### 1.1 Implicit surface ray-tracing system  
 > + Model transformation:Rotation, Scale, Translate in x, y, z direction, Reset Object position
 > + Camera transformation: movement, zoom in zoom out
-> + ray-tracing implicit surface: sphere,eliptical, plane, triangle, Cone, cube, tetrahedron.
+> + ray-tracing implicit surfaces: sphere,eliptical, plane, triangle, Cone, cube, tetrahedron.
 > + small bonus: animation(activate by press KEY V)
 
-### 1.2 Advanced ray-tracing system  
+### 1.2 TriangleMesh ray-tracing system  
 > + Add triangle meshes support into simple ray-tracing system.(Support  xx.obj file )
 > + Toggling between Predefined/per-face normal.In runtime, normal are interpolated using the barycentric coordinates.
 > + A bounding volume hierarchy to traverse the scene(adaptively split triangles and all mesh objects)(50s/frame->15fps)
@@ -23,9 +24,10 @@
 > + z-buffer technique;Multi-thread rasterization ;Gouraud shading/Phong shading;
 > + Procedural texture: stripe;Image texture.
 > + NOTE： perspective correct texture coordinates interpolation is implemnted, but the KAUST_beacon.obj doesn't give the correct texture coordinates, so I am using a parameterization with spherical coordinates.  
+
 ### Manual
 > for  ray-tracing system First of all you need to use left button of mouse to click to select an object, once this object is selected, it’s color turns to purple, and later instruction all apply to this object. If you want cancel selection, click mid-button of your mouse. 
-#### 3.1 Simple ray-tracing system
+#### 3.1 Implicit surface ray-tracing ray-tracing system
 ![alt img-adrt](image/adrt.png)
 
 |Operation  | Instruction  | 
@@ -38,7 +40,7 @@
 
 |Operation  | Instruction  | 
 | -----| ----- |
-|Objects transformation|The Advanced ray-tracing system will change object who is selected one by one, but not as  simple ray-tracing system that you can use mouse to click any object to select that object.Instruction Keys are the same as Simple ray-tracing system|  
+|Objects transformation|The TriangleMesh ray-tracing system will change object who is selected one by one, but not as  simple ray-tracing system that you can use mouse to click any object to select that object.Instruction Keys are the same as Simple ray-tracing system|  
 | Load/Store 	Models matrix| You can load several Objects into a scene, after you place them well, press F2 to store their model matixes, and you can use F3 to load models'model matixes any time you want. |
 | Increase quality| press M to turn on/off supersampling and soft shadowing |
 #### 3.3 Graphics Pipeline system
@@ -51,19 +53,19 @@
  | Textures| When in Phong shading mode,Press N to switch different Textures(stripe, Image)| 
  
 ### Environment 
-- Windows 10;
-- Visual Studio 2017;
+- Windows 10 + Visual Studio 2017;
 - OpenFrameworks v0.11.0;
-- Multi-thread Acceleration: With Multi-thread provided by C++11
-- I would personally recommend run this code on a CPU no worse than i5-6300, otherwise it's too slow to debug or see the animation.
+- Multi-thread Acceleration:  C++11 STL thread library is used; consider to refactor it using STL::excecution in later future. 
+
 ### How to setup the code
 There are two ways to setup the code:
+> 0.cmakefile is provide.
 > 1. You can open the corresponding xxxx.sln in vs-studio-project folder (If you have openframeworks with visual studio this should work).
 > 2. Or you can create a new openframeworks project in visual studio, and add all the source files into your new project. All the source files are in the /vs-studio-project/assignment1-simple_raytracing/src directoty. 
 > 3. In the advanced ray tracing / graphics pipeline/ simple  ray tracing directories, there are xxx.exe that is possible to directly run on your computer and show you this work.  
 
-### Reference  
-- This is also course assginments from KAUST University: CS-248: COMPUTER GRAPHICS  by prof IVAN VIOLA.
+### Reference & Miscs  
 - Kaust Beacon obj is provided by Tayyab Mubeen and is downloadable from: https://grabcad.com/library/kaust-beacon-1. For the purposes of this assignment it has been converted to an OBJ file format using the Meshlab software.
-- book:Fundamental of Computer Graphics.
+- Reference: Fundamental of Computer Graphics IV.
+- If you are interesting or have any question please email me or make a issue, I will try my best to help you!
 
