@@ -8,15 +8,38 @@ template<typename  T>
 struct mVec2{
 	T x;
 	T y;
-	mVec2<T> operator +(mVec2<T>& right) const {
+	mVec2 < T >() = default;
+	inline mVec2 < T >(T x, T y) :x(x), y(y) {
+	}
+
+	mVec2 < T >(const mVec2 < T >&other) :x(other.x), y(other.y) {
+
+	};
+	mVec2 < T >& operator=(const mVec2 < T >&rhs) {
+		this->x = rhs.x;
+		this->y = rhs.y;
+		return *this;
+	}
+
+	mVec2<T>(mVec2<T> && other) :x(std::move(other.x)), y(std::move(other.y))  {
+	}
+
+	mVec2<T>& operator=(mVec2<T> && rhs)  {
+		this->x = rhs.x;
+		this->y = rhs.y;
+		return *this;
+	}
+
+	inline mVec2<T> operator +(mVec2<T>& right) const {
 		return { right.x + x,right.y + y };
 	}
-	mVec2<T> operator -(mVec2<T>& right) const{
+	inline mVec2<T> operator -(mVec2<T>& right) const{
 		return { x- right.x ,y-right.y };
 	}
-	mVec2<T> operator *(float right) const {
+	inline mVec2<T> operator *(float right) const {
 		return { x * right ,y * right};
 	}
+	
 };
 
 
@@ -35,6 +58,12 @@ public:
 	MAIN_DATA_PRECISION getEuclideannNorms()const;
 	mVec3(mVec3 A, mVec3 B);
 	mVec3(float a, float b, float c);
+	inline mVec3(mVec3&& other):x(other.x), y(other.y),z(other.z) {
+	}
+	 mVec3(const mVec3& other) : x(other.x), y(other.y), z(other.z) {
+	}
+	 mVec3& operator =(const mVec3&) = default; 
+	 mVec3& operator =( mVec3&&) = default;
 
 	mVec3();
 	mVec3(float d);

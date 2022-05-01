@@ -1,4 +1,4 @@
-#include <chrono>
+//#include <chrono>
 #include "viewer.h"
 #include "objparser.h"
 using namespace std;
@@ -9,20 +9,19 @@ Viewer::Viewer() {
 Viewer::~Viewer() {
 
 }
-int Viewer::launch_init(const char* title, int windowWidth, int windowHeight, bool resizable , bool fullscreen , bool maximize )
+void Viewer::launch_init(const char* title, int width /*= 0*/, int height /*= 0*/, bool resizable /*= true*/ , bool fullscreen /*= false*/ , bool maximize /*= false */ )
 {
-    m_framebuffer->resize_buffer(windowWidth,windowHeight);
+    m_framebuffer->resize_buffer(width,height);
     platform_initialize();
 
     OBjReader objFilereader;
     string Path = string("C:\\Users\\zhanx0o\\Documents\\sources\\Software-Renderer\\assets\\KAUST_Beacon_NormalTexture.obj");
     objFilereader.read(Path);
     m_object = std::make_unique < RenderObject>(objFilereader.TrianglesIdx, objFilereader.Vertexes, objFilereader.VertexesNormal, objFilereader.VertexesTexture);
-    m_g_pip = std::make_unique<GraphicsPipeline>(320, 480);
-
-    windowHandle =window_create(title, 320, 480);
-
-    return 0;
+    m_g_pip = std::make_unique<GraphicsPipeline>(height, width);
+    
+    windowHandle =window_create(title, width, height );
+    return ;
 }
 
 
@@ -63,10 +62,10 @@ void Viewer::launch_rendering(bool loop)
         //glfwSwapBuffers(window);
         
 		// In microseconds
-		double toc = std::chrono::duration<double>(
+	/*	double toc = std::chrono::duration<double>(
 			std::chrono::system_clock::now().time_since_epoch()).count();
 		double duration = 1000000. * (toc - tic);
-        double fps = 1 / duration;
+		double fps = 1 / duration;*/
         if (!loop)
         {
             return;

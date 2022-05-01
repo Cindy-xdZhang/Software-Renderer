@@ -1,3 +1,8 @@
 *.obj
 *.pdb
 out/*
+Debug/*
+CMakeFiles/*
+.vs/*
+Release/*
+SoftRenderer.dir/*

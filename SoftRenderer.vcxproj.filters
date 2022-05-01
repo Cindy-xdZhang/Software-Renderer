@@ -1,0 +1,43 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="C:\Users\zhanx0o\Documents\sources\Software-Renderer\src\Base.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\zhanx0o\Documents\sources\Software-Renderer\src\la.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\zhanx0o\Documents\sources\Software-Renderer\src\main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\zhanx0o\Documents\sources\Software-Renderer\src\matrix.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\zhanx0o\Documents\sources\Software-Renderer\src\objparser.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\zhanx0o\Documents\sources\Software-Renderer\src\platforms\framebuffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\zhanx0o\Documents\sources\Software-Renderer\src\platforms\image.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\zhanx0o\Documents\sources\Software-Renderer\src\platforms\linux.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\zhanx0o\Documents\sources\Software-Renderer\src\platforms\win32.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\zhanx0o\Documents\sources\Software-Renderer\src\viewer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\zhanx0o\Documents\sources\Software-Renderer\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{B2E254BA-88F0-3DAC-9A8B-22D7FA3BBEC3}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

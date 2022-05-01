@@ -7,7 +7,6 @@ const float EPS = 1e-10;
 
 
 
-//声明一个全0矩阵
 Matrix4::Matrix4()
 {
 
@@ -16,7 +15,6 @@ Matrix4::Matrix4()
 	p[2][0] = 0; p[2][1] = 0; p[2][2] = 0; p[2][3] = 0;
 	p[3][0] = 0; p[3][1] = 0; p[3][2] = 0; p[3][3] = 0;
 }
-//声明一个值全部为value的矩阵
 Matrix4::Matrix4( float value)
 {
 	p[0][0] = value; p[0][1] = value; p[0][2] = value; p[0][3] = value;
@@ -40,7 +38,6 @@ Matrix4::Matrix4(std::vector<std::vector<float> > dvec) {
 	p[3][0] = dvec[3][0]; p[3][1] = dvec[3][1]; p[3][2] = dvec[3][2]; p[3][3] = dvec[3][3];
 }
 
-//实现矩阵的复制
 Matrix4& Matrix4::operator=(const Matrix4& m)
 {
 	if (this == &m) {
@@ -54,7 +51,6 @@ Matrix4& Matrix4::operator=(const Matrix4& m)
 	return *this;
 }
 
-//+=操作
 Matrix4& Matrix4::operator+=(const Matrix4& m)
 {
 	p[0][0] += m.p[0][0]; p[0][1] += m.p[0][1]; p[0][2] += m.p[0][2]; p[0][3] += m.p[0][3];
@@ -63,7 +59,6 @@ Matrix4& Matrix4::operator+=(const Matrix4& m)
 	p[3][0] += m.p[3][0]; p[3][1] += m.p[3][1]; p[3][2] += m.p[3][2]; p[3][3] += m.p[3][3];
 	return *this;
 }
-//实现-=
 Matrix4& Matrix4::operator-=(const Matrix4& m)
 {
 	p[0][0] -= m.p[0][0]; p[0][1] -= m.p[0][1]; p[0][2] -= m.p[0][2]; p[0][3] -= m.p[0][3];
@@ -76,7 +71,6 @@ Matrix4& Matrix4::operator-=(const Matrix4& m)
 
 
 
-//矩阵显示
 void Matrix4::Show() const {
 	//cout << rows_num <<" "<<cols_num<< endl;//显示矩阵的行数和列数
 	for (int i = 0; i < 4; i++) {
@@ -89,7 +83,6 @@ void Matrix4::Show() const {
 }
 
 float Matrix4::det() {
-	//为计算行列式做一个备份
 	float ** back_up;
 	back_up = new float *[4];
 	for (int i = 0; i < 4; i++) {
@@ -102,15 +95,11 @@ float Matrix4::det() {
 	}
 	float ans = 1;
 	for (int i = 0; i < 4; i++) {
-		//通过行变化的形式，使得矩阵对角线上的主元素不为0
 		if (abs(p[i][i]) <= EPS) {
 			bool flag = false;
 			for (int j = 0; (j < 4) && (!flag); j++) {
-				//若矩阵的一个对角线上的元素接近于0且能够通过行变换使得矩阵对角线上的元素不为0
 				if ((abs(p[i][j]) > EPS) && (abs(p[j][i]) > EPS)) {
 					flag = true;
-					//注：进行互换后,p[i][j]变为p[j][j]，p[j][i]变为p[i][i]
-					//对矩阵进行行变换
 					float temp;
 					for (int k = 0; k < 4; k++) {
 						temp = p[i][k];
@@ -141,13 +130,11 @@ float Matrix4::det() {
 	return ans;
 }
 
-//求矩阵的逆矩阵
 Matrix4 inv(Matrix4 A) {
 	float temp;
 	Matrix4 A_B = Matrix4();
-	A_B = A;//为矩阵A做一个备份
+	A_B = A;
 	Matrix4 B = eye(4);
-	//将小于EPS的数全部置0
 	for (int i = 0; i < 4; i++) {
 		for (int j = 0; j < 4; j++) {
 			if (abs(A.p[i][j]) <= EPS) {
@@ -155,7 +142,6 @@ Matrix4 inv(Matrix4 A) {
 			}
 		}
 	}
-	//选择需要互换的两行选主元
 	for (int i = 0; i < 4; i++) {
 		if (abs(A.p[i][i]) <= EPS) {
 			bool flag = false;
@@ -173,12 +159,11 @@ Matrix4 inv(Matrix4 A) {
 				}
 			}
 			if (!flag) {
-				std::cout << "逆矩阵不存在\n";
+				std::cout << "wrong\n";
 				std::abort();
 			}
 		}
 	}
-	//通过初等行变换将A变为上三角矩阵
 	float temp_rate;
 	for (int i = 0; i < 4; i++) {
 		for (int j = i + 1; j < 4; j++) {
@@ -220,7 +205,6 @@ Matrix4 inv(Matrix4 A) {
 	return B;//返回该矩阵的逆矩阵
 }
 
-//实现矩阵的转置
 Matrix4 Matrix4::Transpose()
 {
 	Matrix4 mt;
@@ -233,10 +217,9 @@ Matrix4 Matrix4::Transpose()
 
 
 
-//实现*=
 Matrix4& Matrix4::operator*=(const Matrix4& m)
 {
-	Matrix4 temp;//若C=AB,则矩阵C的行数等于矩阵A的行数，C的列数等于B的列数。
+	Matrix4 temp;
 	for (int i = 0; i <4; i++) {
 		for (int j = 0; j < 4; j++) {
 			for (int k = 0; k < 4; k++) {
@@ -247,7 +230,6 @@ Matrix4& Matrix4::operator*=(const Matrix4& m)
 	*this = temp;
 	return *this;
 }
-//实现矩阵的乘法
 Matrix4 Matrix4::operator*(const Matrix4 & m)const {
 	Matrix4 ba_M(0.0f);
 	//optimization from :https://zhuanlan.zhihu.com/p/146250334?from_voters_page=true
@@ -300,7 +282,7 @@ mVec4 Matrix4::operator*(mVec4 V)const {
 }
 
 
-//制造一个单位矩阵
+
 Matrix4  eye(int n) {
 	Matrix4 A(0.0f);
 	for (int i = 0; i < 4; i++) {

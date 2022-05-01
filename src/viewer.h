@@ -41,7 +41,7 @@ public:
         None, Rotation, Zoom, Pan, Translation
     };
 
-    [[noreturn]] int launch_init(
+    void launch_init(
                const char* title, int width = 0, int height = 0, bool resizable = true, bool fullscreen = false, bool maximize = false );
 
     void launch_rendering(bool loop = true);

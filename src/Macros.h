@@ -21,3 +21,6 @@
 #define Radians(x) ((x)*PI/180.0)
 #define MAX(a,b)    (((a)>(b)) ?  (a):(b))
 #define MIN(a,b)    (((a)>(b)) ?  (b):(a))
+
+#define DEFAULT_WINDOW_HEIGHT 480
+#define DEFAULT_WINDOW_WIDTH 320
