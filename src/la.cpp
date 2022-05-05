@@ -24,8 +24,7 @@ mVec3::mVec3(float a, float b, float c):x(a),y(b),z(c) {
 	this->y = this->y < 0.00f ? 0.00f : this->y;
 	this->z = this->z < 0.00f ? 0.00f : this->z;
 }
-mVec3::mVec3() : x(0), y(0), z(0) {
-}
+
 mVec3::mVec3(float d) : x(d), y(d), z(d) {
 }
 mVec3::~mVec3() {
@@ -214,27 +213,8 @@ mVec3 Triangle::Normal() {
 	return  out;
 
 }
- mVec2<float> Triangle:: PointIsInTriangle(mVec3 p) {
-	//P = A + u * (C - A) + v * (B - A)       // Original equation
-	//	(P - A) = u * (C - A) + v * (B - A)     // Subtract A from both sides
-	//	v2 = u * v0 + v * v1                    // Substitute v0, v1, v2 for less writing
-	//assert(p.z==0);
-	mVec3 ta(a.x, a.y, 0);
-	mVec3 tb(b.x, b.y, 0);
-	mVec3 tc(c.x, c.y, 0);
-	mVec3 v0 = mVec3(tc, ta);
-	mVec3 v1 = mVec3(tb, ta);
-	mVec3 v2 = mVec3(p, ta);
 
-	float deno = 1 / ((v0*v0)*(v1*v1) - (v0*v1)*(v1*v0));
-	float u = (((v1 * v1)*(v2*v0) - (v1*v0)*(v2*v1)))*deno;
-	float v = (((v0*v0)*(v2*v1) - (v0*v1)*(v2*v0)))*deno;
-
-
-	return { u,v };
-
-
-};
+ 
 
  Plane::Plane(mVec3 pm, mVec3 n) :px(pm), n(n) {
 }

@@ -65,7 +65,7 @@ public:
 	 mVec3& operator =(const mVec3&) = default; 
 	 mVec3& operator =( mVec3&&) = default;
 
-	mVec3();
+	mVec3()=default;
 	mVec3(float d);
 	~mVec3();
 	mVec3 operator +(const mVec3& right) const;
@@ -123,10 +123,28 @@ public:
 class Triangle {
 public:
 	mVec3 a, b, c;
-	inline Triangle(mVec3 a, mVec3 b, mVec3 c) :a(a), b(b), c(c) {
+	__forceinline Triangle(mVec3 a, mVec3 b, mVec3 c) :a(a), b(b), c(c) {
 	}
 	Triangle() = default;
-	 mVec2<float> Triangle::PointIsInTriangle(mVec3 p);
+	__forceinline  mVec2<float> Triangle::PointIsInTriangle(const mVec3& p) const {
+		//P = A + u * (C - A) + v * (B - A)       // Original equation
+		//	(P - A) = u * (C - A) + v * (B - A)     // Subtract A from both sides
+		//	v2 = u * v0 + v * v1                    // Substitute v0, v1, v2 for less writing
+		//assert(p.z==0);
+		mVec3 ta(a.x, a.y, 0.0f);
+		mVec3 tb(b.x, b.y, 0.0f);
+		mVec3 tc(c.x, c.y, 0.0f);
+		mVec3 v0 = mVec3(tc, ta);
+		mVec3 v1 = mVec3(tb, ta);
+		mVec3 v2 = mVec3(p, ta);
+
+		float deno = 1.0f / ((v0 * v0) * (v1 * v1) - (v0 * v1) * (v1 * v0));
+		float u = (((v1 * v1) * (v2 * v0) - (v1 * v0) * (v2 * v1))) * deno;
+		float v = (((v0 * v0) * (v2 * v1) - (v0 * v1) * (v2 * v0))) * deno;
+
+		return { u,v };
+
+	}
 	 mVec3 Triangle::Normal();
 	 mVec3 Triangle::Normal(mVec3 dir);
 };

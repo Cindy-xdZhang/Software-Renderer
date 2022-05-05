@@ -3,13 +3,12 @@
 #include "la.h"
 #include "matrix.h"
 #include "Base.h"
-#include <mutex>
 #include <thread>
 #include "timer.hpp"
 #include "CImg.h"
 #include "platforms/framebuffer.h"
 #include <execution>
-
+#include <mutex>
 #define LI 100
 using namespace cimg_library;
 
@@ -51,10 +50,10 @@ struct fragment {
 	mVec2<int>XY;
 	mVec3 RGBv;
 	fragment() = default;
-	inline fragment(float depth,mVec2<int>XY, mVec3 RGBv):XY(XY),RGBv(RGBv),depth(depth) {
+	__forceinline fragment(float depth,mVec2<int>XY, mVec3 RGBv):XY(XY),RGBv(RGBv),depth(depth) {
 
 	}
-	fragment(fragment&& other)
+	__forceinline fragment(fragment&& other)
 		: XY(std::move(other.XY)), RGBv(std::move(other.RGBv)), depth(other.depth)
 	{
 	}
@@ -243,6 +242,7 @@ private:
 
 	float* depthbuffer = NULL;
 	inline void VertexesProcess(const RenderObject& yu );
+	inline mVec3 ADSshading(mVec3 point, mVec3 normal, ShadingMaterial Mp);
 	//inline void Rasterization(const ShadingMaterial& myu );
 	inline void Rasterization(const ShadingMaterial& myu, framebuffer_t* Fb);
 	//inline void FragmentProcess(framebuffer_t* Fb);
@@ -258,6 +258,8 @@ public:
 	mVec3 InitLightPos = mVec3(0, 20, 0);
 	Camera  _Camera;
 	int h, w;
+	std::mutex buffer_mutex;
+
 	GraphicsPipeline() = default;
 	GraphicsPipeline(int h,int w): h(h),w(w){
 		//mTextures.emplace_back(LoadTexture());
@@ -325,8 +327,6 @@ public:
 };
 
 inline void GraphicsPipeline::Render(const RenderObject& yu,  framebuffer_t* Fb) {
-
-	std::cout << "tag1";
 	timer.begin();
 
 	auto mt=yu.Material();
@@ -441,7 +441,49 @@ inline void GraphicsPipeline::VertexesProcess(const RenderObject& yu ) {
 
 }
 
+template<typename T>
+inline T PerspetiveCorrectDepth(T iaz, T ibz, T icz, T uv_u, T uv_v) {
+	
+	float interpolateIZ = iaz + uv_u * (icz - iaz) + uv_v * (ibz - iaz);//P = A + u * (C - A) + v * (B - A)  
+	float  interpolateZ = (1.0f / interpolateIZ);
+	return interpolateZ;
+}
+
+
+inline  mVec3  GraphicsPipeline::ADSshading (mVec3 point, mVec3 normal, ShadingMaterial Mp) {
+	mVec3 Ia = Mp.Ka * LI;
+	mVec3  Sourse = LightSource;
+	mVec3 eye = _Camera.position;
+	//Reflection
+	mVec3 ReflectionD = mVec3(Sourse, point);
+	float distance2 = pow((Sourse.x - point.x), 2) + pow((Sourse.y - point.y), 2) + pow((Sourse.z - point.z), 2);
+	float Intensity = (LI / distance2);
+	mVec3 light_dir(Sourse, point);
+	mVec3 eye_dir(eye, point);
+	light_dir.normalize();
+	eye_dir.normalize();
+	//normal.normalize();
+	mVec3 h = (eye_dir + light_dir);
+	h.normalize();
+	float dotproduct = normal * light_dir;
+	mVec3 Id = Mp.Kd * Intensity * (dotproduct > 0 ? dotproduct : 0);
+	float dotproduct2 = normal * h;
+	float tmp = dotproduct2 > 0.0f ? dotproduct2 : 0.0f;
+	tmp = pow(tmp, Mp.f);
+	mVec3 Is = Mp.Ks * Intensity * tmp;
+	mVec3  If = (Is + Id + Ia);
+	If.ColorClamp();
+	return If;
+};
+
+
+
+
+
+
 inline void  GraphicsPipeline::Rasterization(const ShadingMaterial& myu, framebuffer_t* Fb) {
+
+
 	auto clamp = [](float in)->float {
 		return in > 1.0f ? 1.0f : (in < 0.0f ? 0.0f : in);
 	};
@@ -453,39 +495,14 @@ inline void  GraphicsPipeline::Rasterization(const ShadingMaterial& myu, framebu
 	float f = _Camera.getFarPlane();
 	float depthA = (n + f) / (n - f);
 	float zcoord = f * n * 2;
-	auto ADSshading = [this](mVec3 point, mVec3 normal, ShadingMaterial Mp) {
-		mVec3 Ia = Mp.Ka * LI;
-		mVec3  Sourse = LightSource;
-		mVec3 eye = _Camera.position;
-		//Reflection
-		mVec3 ReflectionD = mVec3(Sourse, point);
-		float distance2 = pow((Sourse.x - point.x), 2) + pow((Sourse.y - point.y), 2) + pow((Sourse.z - point.z), 2);
-		float Intensity = (LI / distance2);
-		mVec3 light_dir(Sourse, point);
-		mVec3 eye_dir(eye, point);
-		light_dir.normalize();
-		eye_dir.normalize();
-		//normal.normalize();
-		mVec3 h = (eye_dir + light_dir);
-		h.normalize();
-		float dotproduct = normal * light_dir;
-		mVec3 Id = Mp.Kd * Intensity * (dotproduct > 0 ? dotproduct : 0);
-		float dotproduct2 = normal * h;
-		float tmp = dotproduct2 > 0.0f ? dotproduct2 : 0.0f;
-		tmp = pow(tmp, Mp.f);
-		mVec3 Is = Mp.Ks * Intensity * tmp;
-		mVec3  If = (Is + Id + Ia);
-		If.ColorClamp();
-		return If;
-	};
+
+	
+
 
 
 	auto FramentShader = [&](TriangleWithAttributes& Tri, mVec2<float>uv)->mVec4 {
-		float iaz = 1.0f / (Tri.a.Coordinate.z - depthA);
-		float ibz = 1.0f / (Tri.b.Coordinate.z - depthA);
-		float icz = 1.0f / (Tri.c.Coordinate.z - depthA);
-		float interpolateIZ = iaz + uv.x * (icz - iaz) + uv.y * (ibz - iaz);//P = A + u * (C - A) + v * (B - A)  
-		float interpolateZ = (1.0f / interpolateIZ);
+		
+		
 		mVec3 tmp;
 		if (UsePhongShading) {
 			//interpolate normal
@@ -533,7 +550,7 @@ inline void  GraphicsPipeline::Rasterization(const ShadingMaterial& myu, framebu
 
 
 		}
-		return { tmp,interpolateZ };
+		return { tmp,1.0};//opacity not used for now.
 	};
 
 
@@ -582,19 +599,61 @@ inline void  GraphicsPipeline::Rasterization(const ShadingMaterial& myu, framebu
 	assert(depthbuffer != NULL);
 	memset(depthbuffer, 0x7f, DEFAULT_WINDOW_HEIGHT* DEFAULT_WINDOW_WIDTH*sizeof(float));
 
+	auto EarlyZtest = [&](int x, int y, float z)->bool {
+	     mVec2<int> ScreenXY = { x, h - (y + 1) };
+		double distance = abs(z - _Camera.position.z);
+		if (depthbuffer[ScreenXY.y * w + ScreenXY.x] > distance)
+		{
+			depthbuffer[ScreenXY.y * w + ScreenXY.x] = distance;
+			return  true;
+		}
+		return false;
+	
+	};
 
-	auto RasterAtriangle = [&](TriangleWithAttributes& TriWithAtrib, std::vector<fragment>& RasterResult) {
 
+	auto outputshading = [&](const fragment& TriFrag) {
+		mVec2<int> ScreenXY = { TriFrag.XY.x, h - (TriFrag.XY.y + 1) };
+		double distance = abs(TriFrag.depth - _Camera.position.z);
+
+		{
+			//std::lock_guard<std::mutex> lock(buffer_mutex);
+			if (depthbuffer[ScreenXY.y * w + ScreenXY.x] > distance) {
+				unsigned char fragColor[4] = { TriFrag.RGBv.x * 255,TriFrag.RGBv.y * 255,TriFrag.RGBv.z * 255,0 };
+				Fb->setvalue(ScreenXY.x, ScreenXY.y, fragColor);
+				//Fb->color_buffer[ScreenXY.y*w + ScreenXY.x] = TriFrag.RGB;
+				depthbuffer[ScreenXY.y * w + ScreenXY.x] = distance;
+			}
+
+		}
+		
+
+	};
+
+
+	auto RasterAtriangle = [&](TriangleWithAttributes& TriWithAtrib) {
+		constexpr bool UseEarlyZ = true;
+
+
+		constexpr size_t MaxFragCount = DEFAULT_WINDOW_WIDTH * DEFAULT_WINDOW_WIDTH * 0.5;
 		auto Tri = TriWithAtrib.GetTriangleVertexes();
 		int Xmin, Xmax, Ymin, Ymax;
 		Xmin = int(floorf(MIN(MIN(Tri.a.x, Tri.b.x), Tri.c.x)));
 		Xmax = int(ceilf(MAX(MAX(Tri.a.x, Tri.b.x), Tri.c.x)));
 		Ymin = int(floorf(MIN(MIN(Tri.a.y, Tri.b.y), Tri.c.y)));
 		Ymax = int(ceilf(MAX(MAX(Tri.a.y, Tri.b.y), Tri.c.y)));
-		if (Xmin < 0 || Xmin >= w || Xmax < 0 || Xmax >= w)return 0;
-		if (Ymin < 0 || Ymin >= h || Ymax < 0 || Ymax >= h)return 0;
-		if (Tri.a.z > 0 || Tri.b.z > 0 || Tri.c.z > 0)return 0;
-		RasterResult.reserve((Xmax - Xmin) * (Ymax - Ymin) * 4);
+		if (Xmin < 0 || Xmin >= w || Xmax < 0 || Xmax >= w)return ;
+		if (Ymin < 0 || Ymin >= h || Ymax < 0 || Ymax >= h)return ;
+		if (Tri.a.z > 0 || Tri.b.z > 0 || Tri.c.z > 0)return ;
+
+		//std::vector<fragment>RasterResult;
+		//RasterResult.reserve((Xmax - Xmin)* (Ymax - Ymin) * 8);
+
+		//early-z
+		const float iaz = 1.0f / (TriWithAtrib.a.Coordinate.z - depthA);
+		const float ibz = 1.0f / (TriWithAtrib.b.Coordinate.z - depthA);
+		const float icz = 1.0f / (TriWithAtrib.c.Coordinate.z - depthA);
+
 
 
 		mVec2<float>FirstTime;
@@ -602,24 +661,39 @@ inline void  GraphicsPipeline::Rasterization(const ShadingMaterial& myu, framebu
 		mVec2<float>Lastuv;
 
 		for (int x = Xmin; x <= Xmax; x++) {
-
 			for (int y = Ymin; y <= Ymax; y++) {
 				if (y == Ymin) {
 					mVec2<float>  uv = Tri.PointIsInTriangle(mVec3(x, y, 0));
 					if (uv.x >= 0 && uv.y >= 0 && uv.x + uv.y <= 1) {
+						if constexpr(UseEarlyZ)
+						{
+							float interpolatez = PerspetiveCorrectDepth(iaz, ibz, icz, uv.x, uv.y);
+							if (!EarlyZtest(x, y, interpolatez))continue;
+
+						}
 						mVec4 attibs = FramentShader(TriWithAtrib, uv);
-						RasterResult.emplace_back(attibs.w, mVec2<int>{x, y }, attibs.tomVec3());
-		}
+						//RasterResult.emplace_back(attibs.w, mVec2<int>{x, y }, attibs.tomVec3());
+						outputshading({ attibs.w, mVec2<int>{x, y }, attibs.tomVec3() });
+
+					}
 					FirstTime = uv;
 
 
-	}
+				}
 				else if (y == Ymin + 1) {
 					mVec2<float>  uv = Tri.PointIsInTriangle(mVec3(x, y, 0));
 					if (uv.x >= 0 && uv.y >= 0 && uv.x + uv.y <= 1) {
 
+						if constexpr (UseEarlyZ)
+						{
+							float interpolatez = PerspetiveCorrectDepth(iaz, ibz, icz, uv.x, uv.y);
+							if (!EarlyZtest(x, y, interpolatez))continue;
+
+						}
+
 						mVec4 attibs = FramentShader(TriWithAtrib, uv);
-						RasterResult.emplace_back(attibs.w ,mVec2<int>{x, y } ,attibs.tomVec3());
+						//RasterResult.emplace_back(attibs.w ,mVec2<int>{x, y } ,attibs.tomVec3());
+						outputshading({ attibs.w, mVec2<int>{x, y }, attibs.tomVec3() });
 					}
 					Incremental_uv = uv - FirstTime;
 					Lastuv = uv;
@@ -628,8 +702,17 @@ inline void  GraphicsPipeline::Rasterization(const ShadingMaterial& myu, framebu
 					mVec2<float> uv = Lastuv + Incremental_uv;
 					Lastuv = uv;
 					if (uv.x >= 0 && uv.y >= 0 && uv.x + uv.y <= 1) {
+
+						if constexpr (UseEarlyZ)
+						{
+							float interpolatez = PerspetiveCorrectDepth(iaz, ibz, icz, uv.x, uv.y);
+							if (!EarlyZtest(x, y, interpolatez))continue;
+
+						}
+
 						mVec4 attibs = FramentShader(TriWithAtrib, uv);
-						RasterResult.emplace_back(attibs.w, mVec2<int>{x, y }, attibs.tomVec3());
+						//RasterResult.emplace_back(attibs.w, mVec2<int>{x, y }, attibs.tomVec3());
+						outputshading({ attibs.w, mVec2<int>{x, y }, attibs.tomVec3() });
 					}
 				}
 
@@ -639,26 +722,14 @@ inline void  GraphicsPipeline::Rasterization(const ShadingMaterial& myu, framebu
 		//return 0;
 
 
-		for (fragment& TriFrag : RasterResult) {
-			mVec2<int> ScreenXY = { TriFrag.XY.x, h - (TriFrag.XY.y + 1) };
-			double distance = abs(TriFrag.depth - _Camera.position.z);
-			if (depthbuffer[ScreenXY.y * w + ScreenXY.x] > distance) {
-				unsigned char fragColor[4] = { TriFrag.RGBv.x * 255,TriFrag.RGBv.y * 255,TriFrag.RGBv.z * 255,0 };
-
-				Fb->setvalue(ScreenXY.x, ScreenXY.y, fragColor);
-				//Fb->color_buffer[ScreenXY.y*w + ScreenXY.x] = TriFrag.RGB;
-
-				depthbuffer[ScreenXY.y * w + ScreenXY.x] = distance;
-			}
-		}
 
 
 	};
 
 	std::vector<int>count(TargetRenderTriangles.size());
 	auto policy = std::execution::par_unseq;
-	std::transform(policy, TargetRenderTriangles.begin(), TargetRenderTriangles.end(), FragmentsAfterRasterization.begin(), count.begin(),RasterAtriangle);
-
+	//std::transform(policy, TargetRenderTriangles.begin(), TargetRenderTriangles.end(), FragmentsAfterRasterization.begin(), count.begin(),RasterAtriangle);//3fps
+	std::for_each(policy, TargetRenderTriangles.begin(), TargetRenderTriangles.end(), RasterAtriangle);
 
 
 
