@@ -4,17 +4,14 @@
 using namespace std;
 
 
-Camera::Camera(mVec3 _position, mVec3 _front, mVec3 _up)
+Camera::Camera(mVec3f _position, mVec3f _front, mVec3f _up)
 {
 
 
 	position = _position;
 
-	//保存相机前方向
 	front = normalize(_front);
-	//	//计算相机上方向
 	up = normalize(_up);
-	//计算相机右方向
 
 	right = front.cross_product(up);
 	right.normalize();
@@ -51,7 +48,7 @@ void Camera::UpdatePitchAngle(float dpitch) {
 	if (pitch > 89.0f)pitch = 89.0f;
 	if (pitch < -89.0f)pitch = -89.0f;
 
-	mVec3 direction(1.0f);
+	mVec3f direction(1.0f);
 	direction.y = cos(Radians(yaw))*cos(Radians(pitch));
 	direction.x = sin(Radians(pitch));
 	direction.z= sin(Radians(yaw))*cos(Radians(pitch));
@@ -68,7 +65,7 @@ void Camera::UpdatePitchAngle(float dpitch) {
 void Camera::UpdateYawAngle( float dyaw) {
 	yaw += dyaw;
 
-	mVec3 direction(1.0f);
+	mVec3f direction(1.0f);
 	direction.y = cos(Radians(yaw))*cos(Radians(pitch));
 	direction.x = sin(Radians(pitch));
 	direction.z = -sin(Radians(yaw))*cos(Radians(pitch));
@@ -80,7 +77,7 @@ void Camera::UpdateYawAngle( float dyaw) {
 }
 
 //p的x y z分别带表 相机上下 左右 前后
-void Camera::UpdatePos(mVec3 p) {
+void Camera::UpdatePos(mVec3f p) {
 	position += (up*p.y+ right * p.x + front * p.z);
 }
 
@@ -97,7 +94,7 @@ Matrix4 Camera::genPerspectiveMat() {
 }
 
 
-mVec3 ArcBallControler::GetArcBallPositionVector(int x, int y) {
+mVec3f ArcBallControler::GetArcBallPositionVector(int x, int y) {
 	float rx = (float(2 * x) / float(w)) - 1;
 	float ry = (float(2 * y) / float(h)) - 1;
 	float square = rx * rx + ry * ry;
@@ -112,10 +109,10 @@ mVec3 ArcBallControler::GetArcBallPositionVector(int x, int y) {
 		z = sqrtf(1 - square);
 	}
 
-	return mVec3(rx, ry, z);
+	return mVec3f(rx, ry, z);
 }
 
-Matrix4 ArcBallControler::GetArcBallrotateMatrix(mVec3 a, mVec3 b) {
+Matrix4 ArcBallControler::GetArcBallrotateMatrix(mVec3f a, mVec3f b) {
 	float ElmentDotproduct = a * b;
 	float aValue = a.x*a.x + a.y*a.y + a.z*a.z;
 	float bValue = b.x*b.x + b.y*b.y + b.z*b.z;
@@ -124,7 +121,7 @@ Matrix4 ArcBallControler::GetArcBallrotateMatrix(mVec3 a, mVec3 b) {
 	cosTheta = cosTheta < -1 ? -1 : cosTheta;
 	float Theta = -acos(cosTheta);//in radians form
 	//Theta = 180 * Theta / PI;
-	mVec3 axis = a.cross_product(b);
+	mVec3f axis = a.cross_product(b);
 	axis.normalize();
 	Matrix4 tmp=rotateMatrix(axis, Theta);
 	return tmp;

@@ -253,7 +253,7 @@ Matrix4 Matrix4::operator*(float value)const {
 	return ba_M;
 
 }
-mVec4 Matrix4::operator*(mVec4 V)const {
+mVec4f Matrix4::operator*(mVec4f V)const {
 	float a=0.0f, b = 0.0f, c = 0.0f, d = 0.0f;
 
 	a += this->p[0][0] * V.x;
@@ -280,6 +280,7 @@ mVec4 Matrix4::operator*(mVec4 V)const {
 	d += this->p[3][3] * V.w;
 	return mVec4(a,b,c,d);
 }
+
 
 
 
@@ -310,7 +311,7 @@ Matrix4 scaleMatrix(float scalex, float scaley, float scalez) {
 	return tmp;
 }
 //@translation: mVec: xtrans, ytrans,ztrans
-Matrix4 translateMatrix(mVec3 translation) {
+Matrix4 translateMatrix(mVec3f translation) {
 	Matrix4 tmp = eye(4);
 	tmp.p[0][3] = translation.x;
 	tmp.p[1][3] = translation.y;
@@ -373,10 +374,10 @@ Matrix4 PerspectiveMatrix(float r, float l, float t, float b, float n, float f) 
 
 }
 
-Matrix4 ViewMatrix(mVec3 eyePos, mVec3 GazeDirection, mVec3 TopDirection) {
-	mVec3 GxT = GazeDirection.cross_product(TopDirection);
-	mVec3 minus_G = GazeDirection * -1.0f;
-	mVec3 minus_eye = eyePos * -1.0f;
+Matrix4 ViewMatrix(mVec3f eyePos, mVec3f GazeDirection, mVec3f TopDirection) {
+	mVec3f GxT = GazeDirection.cross_product(TopDirection);
+	mVec3f minus_G = GazeDirection * -1.0f;
+	mVec3f minus_eye = eyePos * -1.0f;
 	auto dataRotate_View = std::vector< std::vector<float>>({ \
 	{ GxT.x, GxT.y, GxT.z,0} ,\
 	{TopDirection.x, TopDirection.y, TopDirection.z,0} ,\
@@ -394,7 +395,7 @@ Matrix4 ViewMatrix(mVec3 eyePos, mVec3 GazeDirection, mVec3 TopDirection) {
 }
 
 
-Matrix4 rotateMatrix(mVec3 n, float theta) {
+Matrix4 rotateMatrix(mVec3f n, float theta) {
 
 	float SinTheta = sin(theta);
 	float CosTheta = cos(theta);

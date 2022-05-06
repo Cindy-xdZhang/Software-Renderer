@@ -22,24 +22,20 @@ public:
 	float b;
 	float t;
 	Camera()=default;
-	Camera(mVec3 _position, mVec3 _front, mVec3 _up);
-	//前方
-	mVec3 front;
-	//上方
-	mVec3 up;
-	//右方
-	mVec3 right;
-	//相机位置
-	mVec3 position;
+	Camera(mVec3f _position, mVec3f _front, mVec3f _up);
+	mVec3f front;
+	mVec3f up;
+	mVec3f right;
+	mVec3f position;
 
 
 	//void Reset();
 	void Camera::SetFrustm(float r, float l, float b, float t, float fov, float farplane);
 	void Camera::UpdatePitchAngle(float dpitch);
 	void Camera::UpdateYawAngle(float dyaw);
-	void Camera::UpdatePos(mVec3 z);
+	void Camera::UpdatePos(mVec3f z);
 	void Camera::UpdateFov(float fov);
-	//void Camera::UpdateTarget(mVec3 _position); 
+	//void Camera::UpdateTarget(mVec3f _position); 
 	Matrix4 Camera::genViewMat();
 	Matrix4 Camera::genPerspectiveMat();
 	float Camera::getNearPlane();
@@ -52,7 +48,7 @@ public:
 	ArcBallControler() = default;
 	ArcBallControler(int w, int h): w(w), h(h){
 	}
-	mVec3 GetArcBallPositionVector(int x, int y);
+	mVec3f GetArcBallPositionVector(int x, int y);
 
-	Matrix4 GetArcBallrotateMatrix(mVec3 x, mVec3 y);
+	Matrix4 GetArcBallrotateMatrix(mVec3f x, mVec3f y);
 };

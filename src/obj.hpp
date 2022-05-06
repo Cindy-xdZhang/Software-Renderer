@@ -12,12 +12,12 @@
 #define LI 100
 using namespace cimg_library;
 
-static mVec3 InitEyePos = mVec3(0, 0, 200);
-static mVec3 InitGazeDirection = mVec3(0, 0, -1);
-static mVec3 InitTopDirection = mVec3(0, 1, 0);
+static mVec3f InitEyePos = mVec3f(0, 0, 200);
+static mVec3f InitGazeDirection = mVec3f(0, 0, -1);
+static mVec3f InitTopDirection = mVec3f(0, 1, 0);
 
 struct Texture {
-	mVec3* TextureArr;
+	mVec3f* TextureArr;
 	int TW;
 	int TH;
 };
@@ -28,12 +28,12 @@ struct Texture {
 
 
 typedef struct vertex {
-	mVec3 Coordinate;
+	mVec3f Coordinate;
 
 	//attributes
-	mVec3 normal;
-	mVec3 shading;
-	mVec3 EyeSpaceCoordinate;
+	mVec3f normal;
+	mVec3f shading;
+	mVec3f EyeSpaceCoordinate;
 	mVec2<float> st;
 	//vertex operator+(vertex right) {
 	//	return { Coordinate + right.Coordinate,normal + right.normal, shading + right.shading, EyeSpaceCoordinate + right.EyeSpaceCoordinate };
@@ -48,9 +48,9 @@ __declspec(align(1))
 struct fragment {
 	float depth;
 	mVec2<int>XY;
-	mVec3 RGBv;
+	mVec3f RGBv;
 	fragment() = default;
-	__forceinline fragment(float depth,mVec2<int>XY, mVec3 RGBv):XY(XY),RGBv(RGBv),depth(depth) {
+	__forceinline fragment(float depth,mVec2<int>XY, mVec3f RGBv):XY(XY),RGBv(RGBv),depth(depth) {
 
 	}
 	__forceinline fragment(fragment&& other)
@@ -62,9 +62,9 @@ struct fragment {
 };
 
 struct ShadingMaterial {
-	mVec3 Ka;
-	mVec3 Kd;
-	mVec3 Ks;
+	mVec3f Ka;
+	mVec3f Kd;
+	mVec3f Ks;
 	float f;
 };
 
@@ -75,18 +75,18 @@ public:
 	vtx a, b, c;
 	inline TriangleWithAttributes(vtx a, vtx b, vtx c) :a(a), b(b), c(c) {
 	}
-	inline TriangleWithAttributes(mVec3 ai, mVec3 bi, mVec3 ci) {
+	inline TriangleWithAttributes(mVec3f ai, mVec3f bi, mVec3f ci) {
 		a.Coordinate = ai;
 		b.Coordinate = bi;
 		c.Coordinate = ci;
 	}
 	TriangleWithAttributes() = default;
-	inline mVec3 Normal() {
-		mVec3 L1(a.Coordinate, c.Coordinate);
-		mVec3 L2(b.Coordinate, c.Coordinate);
-		mVec3 out = L2.cross_product(L1);
+	inline mVec3f Normal() {
+		mVec3f L1(a.Coordinate, c.Coordinate);
+		mVec3f L2(b.Coordinate, c.Coordinate);
+		mVec3f out = L2.cross_product(L1);
 		out.normalize();
-		/*	mVec3 out2 = L1.cross_product(L2);
+		/*	mVec3f out2 = L1.cross_product(L2);
 			if (dir*out > 0)return out2;*/
 		return  out;
 
@@ -104,9 +104,9 @@ typedef struct vertex4 {
 	mVec4 Coordinate;
 
 	//attributes
-	mVec3 normal;
-	mVec3 shading;
-	mVec3 EyeSpaceCoordinate;
+	mVec3f normal;
+	mVec3f shading;
+	mVec3f EyeSpaceCoordinate;
 	//mVec2<float> st;
 	vertex4 operator+(vertex4 right) {
 		return { Coordinate + right.Coordinate,normal + right.normal, shading + right.shading, EyeSpaceCoordinate + right.EyeSpaceCoordinate };
@@ -119,26 +119,26 @@ class Vertex4TriangleWithAttributes {
 public:
 	vertex4  a, b, c;
 	/*inline Triangle GetTriangleVertexes() {
-		return  Triangle(this->a.Coordinate.tomVec3(), this->b.Coordinate.tomVec3(), this->c.Coordinate.tomVec3());
+		return  Triangle(this->a.Coordinate.tomVec3f(), this->b.Coordinate.tomVec3f(), this->c.Coordinate.tomVec3f());
 
 	}*/
 	Vertex4TriangleWithAttributes(vertex4 a, vertex4 b, vertex4 c) :a(a), b(b), c(c) {
 
 	}
 	TriangleWithAttributes toTriangleWithAttributes() {
-		vertex  a1 = { a.Coordinate.tomVec3(),a.normal,a.shading,a.EyeSpaceCoordinate };
-		vertex	b1 = { b.Coordinate.tomVec3(),b.normal,b.shading,b.EyeSpaceCoordinate };
-		vertex	c1 = { c.Coordinate.tomVec3(),a.normal,c.shading,c.EyeSpaceCoordinate };
+		vertex  a1 = { a.Coordinate.tomVec3f(),a.normal,a.shading,a.EyeSpaceCoordinate };
+		vertex	b1 = { b.Coordinate.tomVec3f(),b.normal,b.shading,b.EyeSpaceCoordinate };
+		vertex	c1 = { c.Coordinate.tomVec3f(),a.normal,c.shading,c.EyeSpaceCoordinate };
 		return TriangleWithAttributes(a1, b1, c1);
 	}
 };
 //clip_plane为裁剪平面的自定义结构体，vert_list存储了待裁剪凸多边形的所有顶点
 //num_vert为顶点个数，in_list为需要保留下来的裁剪平面内侧顶点的列表
 void clip_with_plane(Plane c_plane, std::vector<Vertex4TriangleWithAttributes> in_list, std::vector<Vertex4TriangleWithAttributes>& out_list) {
-	auto cal_project_distance = [](Plane ic_plane, mVec3 ptx) ->float {
+	auto cal_project_distance = [](Plane ic_plane, mVec3f ptx) ->float {
 		return (ptx - ic_plane.px)*ic_plane.n;
 	};
-	auto cal_insertRatio = [](Plane ic_plane, mVec3 ptx1, mVec3 ptx2) ->float {
+	auto cal_insertRatio = [](Plane ic_plane, mVec3f ptx1, mVec3f ptx2) ->float {
 		float a= ic_plane.n*ptx1 - ic_plane.n*ic_plane.px;
 		float b = ic_plane.n*(ptx1 - ptx2);
 
@@ -156,8 +156,8 @@ void clip_with_plane(Plane c_plane, std::vector<Vertex4TriangleWithAttributes> i
 			//从最后一个点开始，遍历所有边
 			current_index = i;
 			previous_index = (i - 1 + 3) % 3;
-			mVec3 pre_vertex = vert_list[previous_index].Coordinate.tomVec3(); //边的起始点
-			mVec3 cur_vertex = vert_list[current_index].Coordinate.tomVec3();  //边的终止点
+			mVec3f pre_vertex = vert_list[previous_index].Coordinate.tomVec3f(); //边的起始点
+			mVec3f cur_vertex = vert_list[current_index].Coordinate.tomVec3f();  //边的终止点
 
 			float d1 = cal_project_distance(c_plane, pre_vertex);
 			float d2 = cal_project_distance(c_plane, cur_vertex);
@@ -213,25 +213,25 @@ protected:
 
 public:
 	std::vector<mVec3i> TrianglesIdx;
-	std::vector<mVec3> Vertexes;
-	std::vector<mVec3> VertexesNormal;
+	std::vector<mVec3f> Vertexes;
+	std::vector<mVec3f> VertexesNormal;
 	std::vector<mVec2<float>>VertexesTex;
 	Matrix4 ModleMatrix ;
 	Matrix4 NormalMatrix ;
-	inline void updateMaterial(mVec3 a, mVec3 d, mVec3 s,float f) {
+	inline void updateMaterial(mVec3f a, mVec3f d, mVec3f s,float f) {
 		this->shma = ShadingMaterial({ a, d, s,f });
 	}
 	inline ShadingMaterial Material() const{
 		return this->shma;
 	}
 	RenderObject() = default;
-	RenderObject(std::vector<mVec3i> TrianglesIdx, std::vector<mVec3>Vertexes, std::vector<mVec3>VertexesNormal, std::vector<mVec2<float>>VertexesT) {
+	RenderObject(std::vector<mVec3i> TrianglesIdx, std::vector<mVec3f>Vertexes, std::vector<mVec3f>VertexesNormal, std::vector<mVec2<float>>VertexesT) {
 		this->TrianglesIdx = TrianglesIdx;
 		this->Vertexes =Vertexes;
 		this->VertexesNormal = VertexesNormal;
 		this->VertexesTex = VertexesT;
-		ModleMatrix =  translateMatrix(mVec3(-125, -125, -125));
-		this->shma = { mVec3(1,1,1) * 0.002, mVec3(1, 1, 1)* 600, mVec3(1, 1, 1)*20,8};//  0.0005      8
+		ModleMatrix =  translateMatrix(mVec3f(-125, -125, -125));
+		this->shma = { mVec3f(1,1,1) * 0.002, mVec3f(1, 1, 1)* 600, mVec3f(1, 1, 1)*20,8};//  0.0005      8
 	}
 };
 
@@ -242,11 +242,11 @@ private:
 
 	float* depthbuffer = NULL;
 	inline void VertexesProcess(const RenderObject& yu );
-	inline mVec3 ADSshading(mVec3 point, mVec3 normal, ShadingMaterial Mp);
+	inline mVec3f ADSshading(mVec3f point, mVec3f normal, ShadingMaterial Mp);
 	//inline void Rasterization(const ShadingMaterial& myu );
 	inline void Rasterization(const ShadingMaterial& myu, framebuffer_t* Fb);
 	//inline void FragmentProcess(framebuffer_t* Fb);
-	mVec3 LightSource;
+	mVec3f LightSource;
 	std::vector<TriangleWithAttributes> TargetRenderTriangles;
 	std::vector<std::vector<fragment>> FragmentsAfterRasterization;
 
@@ -255,7 +255,7 @@ public:
 	bool Clip;
 	int TextureChanel;
 	bool UsePhongShading;//false for GouraudShading  ture for phongshading 
-	mVec3 InitLightPos = mVec3(0, 20, 0);
+	mVec3f InitLightPos = mVec3f(0, 20, 0);
 	Camera  _Camera;
 	int h, w;
 	std::mutex buffer_mutex;
@@ -285,7 +285,7 @@ public:
 
 		tX.TW = TextureImg.width();
 		tX.TH = TextureImg.height();
-		tX.TextureArr = (mVec3*)malloc(tX.TW * tX.TH * sizeof(mVec3));
+		tX.TextureArr = (mVec3f*)malloc(tX.TW * tX.TH * sizeof(mVec3f));
 		for (int r = 0; r < tX.TH; r++)
 			for (int c = 0; c < tX.TW; c++) {
 				tX.TextureArr[r * tX.TW + c].x = float(TextureImg(c, r, 0)) / 255.0f;
@@ -295,8 +295,8 @@ public:
 		return tX;
 	}
 
-	inline mVec3 LookupTexel(mVec2<float> st) {
-		auto linear = [](float alpha, mVec3 a, mVec3 b) {
+	inline mVec3f LookupTexel(mVec2<float> st) {
+		auto linear = [](float alpha, mVec3f a, mVec3f b) {
 			return a * alpha + b * (1 - alpha);
 		};
 		const auto& tex = mTextures[TextureChanel];
@@ -314,13 +314,13 @@ public:
 		int s2 = int(ceilf(s));
 		int t1 = int(floorf(t));
 		int t2 = int(ceilf(t));
-		mVec3 C1 = TextureArr[t1 * TW + s1];
-		mVec3 C2 = TextureArr[t1 * TW + s2];
-		mVec3 C3 = TextureArr[t2 * TW + s1];
-		mVec3 C4 = TextureArr[t2 * TW + s2];
-		mVec3 C12 = linear(s - s1, C1, C2);
-		mVec3 C34 = linear(s - s1, C3, C4);
-		mVec3 C = linear(t - t1, C12, C34);
+		mVec3f C1 = TextureArr[t1 * TW + s1];
+		mVec3f C2 = TextureArr[t1 * TW + s2];
+		mVec3f C3 = TextureArr[t2 * TW + s1];
+		mVec3f C4 = TextureArr[t2 * TW + s2];
+		mVec3f C12 = linear(s - s1, C1, C2);
+		mVec3f C34 = linear(s - s1, C3, C4);
+		mVec3f C = linear(t - t1, C12, C34);
 		return C;
 
 	}
@@ -357,27 +357,27 @@ inline void GraphicsPipeline::clearPipeline() {
 
 
 inline void GraphicsPipeline::VertexesProcess(const RenderObject& yu ) {
-	auto Vertexshading = [this](mVec3 point, mVec3 normal, ShadingMaterial Mp) {
-		mVec3 Ia = Mp.Ka*LI;
-		mVec3  Sourse = LightSource;
-		mVec3 eye = mVec3(0,0,0);
+	auto Vertexshading = [this](mVec3f point, mVec3f normal, ShadingMaterial Mp) {
+		mVec3f Ia = Mp.Ka*LI;
+		mVec3f  Sourse = LightSource;
+		mVec3f eye = mVec3f(0,0,0);
 		//Reflection
-		mVec3 ReflectionD = mVec3(Sourse, point);
+		mVec3f ReflectionD = mVec3f(Sourse, point);
 		float distance2 = pow((Sourse.x - point.x), 2) + pow((Sourse.y - point.y), 2) + pow((Sourse.z - point.z), 2);
 		float Intensity = (LI / distance2);
-		mVec3 light_dir(Sourse, point);
-		mVec3 eye_dir(eye, point);
+		mVec3f light_dir(Sourse, point);
+		mVec3f eye_dir(eye, point);
 		light_dir.normalize();
 		eye_dir.normalize();
-		mVec3 h = (eye_dir + light_dir);
+		mVec3f h = (eye_dir + light_dir);
 		h.normalize();
 		float dotproduct = normal * light_dir;
-		mVec3 Id = Mp.Kd*Intensity*(dotproduct > 0 ? dotproduct : 0);
+		mVec3f Id = Mp.Kd*Intensity*(dotproduct > 0 ? dotproduct : 0);
 		float dotproduct2 = normal * h;
 		float tmp = dotproduct2 > 0.0f ? dotproduct2 : 0.0f;
 		tmp = pow(tmp, Mp.f);
-		mVec3 Is = Mp.Ks*Intensity*tmp;
-		mVec3  If = (Is + Id + Ia);
+		mVec3f Is = Mp.Ks*Intensity*tmp;
+		mVec3f  If = (Is + Id + Ia);
 		If.ColorClamp(); 
 		return If;
 	};
@@ -403,26 +403,26 @@ inline void GraphicsPipeline::VertexesProcess(const RenderObject& yu ) {
 	//-------------------------------
 	// apply  MVP projction +Pervertex lighting
 	//-------------------------------
-	mVec4 LightSourceHomo = V * mVec4(InitLightPos, 1);
+	mVec4f LightSourceHomo = V * mVec4f(InitLightPos, 1);
 	LightSource = LightSourceHomo.tomVec3();
 
 	int Vid = 0;
 	std::vector<vertex>TargetRenderVertexes;
 	TargetRenderVertexes.reserve(yu.Vertexes.size());
-	for (const mVec3& Vertex : yu.Vertexes) {
+	for (const mVec3f& Vertex : yu.Vertexes) {
 		//-------------------------------
 		//  Model + View  transformation
 		//-------------------------------
-		mVec4 EyeHomoCoordinates = (ViewModel*  mVec4(Vertex, 1));
-		mVec3 vertex_normal = (NoramlViewModel * mVec4(yu.VertexesNormal[Vid], 0)).tomVec3();
+		mVec4f EyeHomoCoordinates = (ViewModel*  mVec4f(Vertex, 1));
+		mVec3f vertex_normal = (NoramlViewModel * mVec4f(yu.VertexesNormal[Vid], 0)).tomVec3();
 		//-------------------------------
 		//Pervertex  LightSource
 		//-------------------------------
-		mVec3 shading = Vertexshading(EyeHomoCoordinates.tomVec3(), yu.VertexesNormal[Vid], yu.Material());
+		mVec3f shading = Vertexshading(EyeHomoCoordinates.tomVec3(), yu.VertexesNormal[Vid], yu.Material());
 		//-------------------------------
 		//Perpective + Viewport transformation
 	   //-------------------------------
-		mVec4 HomoCoordinates = (PersViewPort*  EyeHomoCoordinates);
+		mVec4f HomoCoordinates = (PersViewPort*  EyeHomoCoordinates);
 		HomoCoordinates = HomoCoordinates / HomoCoordinates.w;
 		vertex tmp = { HomoCoordinates.tomVec3(),vertex_normal,shading, EyeHomoCoordinates.tomVec3(),yu.VertexesTex[Vid]};
 		TargetRenderVertexes.emplace_back(tmp);
@@ -450,28 +450,28 @@ inline T PerspetiveCorrectDepth(T iaz, T ibz, T icz, T uv_u, T uv_v) {
 }
 
 
-inline  mVec3  GraphicsPipeline::ADSshading (mVec3 point, mVec3 normal, ShadingMaterial Mp) {
-	mVec3 Ia = Mp.Ka * LI;
-	mVec3  Sourse = LightSource;
-	mVec3 eye = _Camera.position;
+inline  mVec3f  GraphicsPipeline::ADSshading (mVec3f point, mVec3f normal, ShadingMaterial Mp) {
+	mVec3f Ia = Mp.Ka * LI;
+	mVec3f  Sourse = LightSource;
+	mVec3f eye = _Camera.position;
 	//Reflection
-	mVec3 ReflectionD = mVec3(Sourse, point);
+	mVec3f ReflectionD = mVec3f(Sourse, point);
 	float distance2 = pow((Sourse.x - point.x), 2) + pow((Sourse.y - point.y), 2) + pow((Sourse.z - point.z), 2);
 	float Intensity = (LI / distance2);
-	mVec3 light_dir(Sourse, point);
-	mVec3 eye_dir(eye, point);
+	mVec3f light_dir(Sourse, point);
+	mVec3f eye_dir(eye, point);
 	light_dir.normalize();
 	eye_dir.normalize();
 	//normal.normalize();
-	mVec3 h = (eye_dir + light_dir);
+	mVec3f h = (eye_dir + light_dir);
 	h.normalize();
 	float dotproduct = normal * light_dir;
-	mVec3 Id = Mp.Kd * Intensity * (dotproduct > 0 ? dotproduct : 0);
+	mVec3f Id = Mp.Kd * Intensity * (dotproduct > 0 ? dotproduct : 0);
 	float dotproduct2 = normal * h;
 	float tmp = dotproduct2 > 0.0f ? dotproduct2 : 0.0f;
 	tmp = pow(tmp, Mp.f);
-	mVec3 Is = Mp.Ks * Intensity * tmp;
-	mVec3  If = (Is + Id + Ia);
+	mVec3f Is = Mp.Ks * Intensity * tmp;
+	mVec3f  If = (Is + Id + Ia);
 	If.ColorClamp();
 	return If;
 };
@@ -500,20 +500,20 @@ inline void  GraphicsPipeline::Rasterization(const ShadingMaterial& myu, framebu
 
 
 
-	auto FramentShader = [&](TriangleWithAttributes& Tri, mVec2<float>uv)->mVec4 {
+	auto FramentShader = [&](TriangleWithAttributes& Tri, mVec2<float>uv)->mVec4f {
 		
 		
-		mVec3 tmp;
+		mVec3f tmp;
 		if (UsePhongShading) {
 			//interpolate normal
-			mVec3 normal = Tri.a.normal + ((Tri.c.normal - Tri.a.normal) * uv.x + (Tri.b.normal - Tri.a.normal) * uv.y);
+			mVec3f normal = Tri.a.normal + ((Tri.c.normal - Tri.a.normal) * uv.x + (Tri.b.normal - Tri.a.normal) * uv.y);
 			normal.normalize();//normal in eyespace,light source in eyespace
-			mVec3 point = Tri.a.EyeSpaceCoordinate * (1 - uv.x - uv.y) + (Tri.c.EyeSpaceCoordinate * uv.x) + (Tri.b.EyeSpaceCoordinate * uv.y);
+			mVec3f point = Tri.a.EyeSpaceCoordinate * (1 - uv.x - uv.y) + (Tri.c.EyeSpaceCoordinate * uv.x) + (Tri.b.EyeSpaceCoordinate * uv.y);
 			tmp = ADSshading(point, normal, myu);
 
 			//stripe texture
 			if (TextureChanel == 1) {
-				mVec3 backcolor = { 0,0,0 };
+				mVec3f backcolor = { 0,0,0 };
 				float scale = 100;
 				float fuzz = 2;
 				float width = 10;
@@ -535,8 +535,8 @@ inline void  GraphicsPipeline::Rasterization(const ShadingMaterial& myu, framebu
 				//Texcoords = Texcoords* interpolateZ;
 				Texcoords.x = fract(Texcoords.x * scale);
 				Texcoords.y = fract(Texcoords.y * scale);
-				//mVec3 backcolor =LookupTexel(Texcoords);
-				mVec3 backcolor = { 0.5,0.5,0.5 };
+				//mVec3f backcolor =LookupTexel(Texcoords);
+				mVec3f backcolor = { 0.5,0.5,0.5 };
 				tmp = { backcolor.x * tmp.x,  backcolor.y * tmp.y, backcolor.z * tmp.z };
 				tmp.ColorClamp();
 			}
@@ -663,7 +663,7 @@ inline void  GraphicsPipeline::Rasterization(const ShadingMaterial& myu, framebu
 		for (int x = Xmin; x <= Xmax; x++) {
 			for (int y = Ymin; y <= Ymax; y++) {
 				if (y == Ymin) {
-					mVec2<float>  uv = Tri.PointIsInTriangle(mVec3(x, y, 0));
+					mVec2<float>  uv = Tri.PointIsInTriangle(mVec3f(x, y, 0));
 					if (uv.x >= 0 && uv.y >= 0 && uv.x + uv.y <= 1) {
 						if constexpr(UseEarlyZ)
 						{
@@ -671,8 +671,8 @@ inline void  GraphicsPipeline::Rasterization(const ShadingMaterial& myu, framebu
 							if (!EarlyZtest(x, y, interpolatez))continue;
 
 						}
-						mVec4 attibs = FramentShader(TriWithAtrib, uv);
-						//RasterResult.emplace_back(attibs.w, mVec2<int>{x, y }, attibs.tomVec3());
+						mVec4f attibs = FramentShader(TriWithAtrib, uv);
+						//RasterResult.emplace_back(attibs.w, mVec2<int>{x, y }, attibs.tomVec3f());
 						outputshading({ attibs.w, mVec2<int>{x, y }, attibs.tomVec3() });
 
 					}
@@ -681,7 +681,7 @@ inline void  GraphicsPipeline::Rasterization(const ShadingMaterial& myu, framebu
 
 				}
 				else if (y == Ymin + 1) {
-					mVec2<float>  uv = Tri.PointIsInTriangle(mVec3(x, y, 0));
+					mVec2<float>  uv = Tri.PointIsInTriangle(mVec3f(x, y, 0));
 					if (uv.x >= 0 && uv.y >= 0 && uv.x + uv.y <= 1) {
 
 						if constexpr (UseEarlyZ)
@@ -691,8 +691,8 @@ inline void  GraphicsPipeline::Rasterization(const ShadingMaterial& myu, framebu
 
 						}
 
-						mVec4 attibs = FramentShader(TriWithAtrib, uv);
-						//RasterResult.emplace_back(attibs.w ,mVec2<int>{x, y } ,attibs.tomVec3());
+						mVec4f attibs = FramentShader(TriWithAtrib, uv);
+						//RasterResult.emplace_back(attibs.w ,mVec2<int>{x, y } ,attibs.tomVec3f());
 						outputshading({ attibs.w, mVec2<int>{x, y }, attibs.tomVec3() });
 					}
 					Incremental_uv = uv - FirstTime;
@@ -710,8 +710,8 @@ inline void  GraphicsPipeline::Rasterization(const ShadingMaterial& myu, framebu
 
 						}
 
-						mVec4 attibs = FramentShader(TriWithAtrib, uv);
-						//RasterResult.emplace_back(attibs.w, mVec2<int>{x, y }, attibs.tomVec3());
+						mVec4f attibs = FramentShader(TriWithAtrib, uv);
+						//RasterResult.emplace_back(attibs.w, mVec2<int>{x, y }, attibs.tomVec3f());
 						outputshading({ attibs.w, mVec2<int>{x, y }, attibs.tomVec3() });
 					}
 				}
@@ -752,18 +752,18 @@ inline void  GraphicsPipeline::Rasterization(const ShadingMaterial& myu, framebu
 #ifdef CLIP
 if (Clip) {
 	int Vid = 0;
-	for (mVec3& Vertex : yu.Vertexes) {
+	for (mVec3f& Vertex : yu.Vertexes) {
 		//-------------------------------
 		//  Model + View  transformation
 		//-------------------------------
 		mVec4 EyeHomoCoordinates = (ViewModel*  mVec4(Vertex, 1));
-		yu.VertexesNormal[Vid] = (NoramlViewModel * mVec4(yu.VertexesNormal[Vid], 0)).tomVec3();
+		yu.VertexesNormal[Vid] = (NoramlViewModel * mVec4(yu.VertexesNormal[Vid], 0)).tomVec3f();
 		//-------------------------------
 		//Pervertex  LightSource
 		//-------------------------------
-		mVec3 shading = Vertexshading(EyeHomoCoordinates.tomVec3(), yu.VertexesNormal[Vid], yu.Material());
+		mVec3f shading = Vertexshading(EyeHomoCoordinates.tomVec3f(), yu.VertexesNormal[Vid], yu.Material());
 
-		vertex4 tmp = { EyeHomoCoordinates, yu.VertexesNormal[Vid],shading, EyeHomoCoordinates.tomVec3() };
+		vertex4 tmp = { EyeHomoCoordinates, yu.VertexesNormal[Vid],shading, EyeHomoCoordinates.tomVec3f() };
 		TargetRenderVertexes.emplace_back(tmp);
 		Vid++;
 	}

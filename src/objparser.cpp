@@ -27,7 +27,7 @@ void OBjReader::readVertexs(std::string Filepath) {
 					const char* Cstr = line.c_str();
 					float Vx = 0, Vy = 0, Vz = 0;
 					sscanf(Cstr, "vn %f %f %f", &Vx, &Vy, &Vz);
-					VertexesNormal.emplace_back(mVec3(Vx, Vy, Vz));
+					VertexesNormal.emplace_back(mVec3f(Vx, Vy, Vz));
 				}
 				else if(beging2 == 't'){
 					const char* Cstr = line.c_str();
@@ -39,7 +39,7 @@ void OBjReader::readVertexs(std::string Filepath) {
 					const char* Cstr = line.c_str();
 					float Vx = 0, Vy = 0, Vz = 0;
 					sscanf(Cstr, "v %f %f %f", &Vx, &Vy, &Vz);
-					Vertexes.emplace_back(mVec3(Vx, Vy, Vz));
+					Vertexes.emplace_back(mVec3f(Vx, Vy, Vz));
 
 				}
 			}
@@ -95,15 +95,15 @@ void OBjReader::Load_CalculateNormal_Store(std::string inputFilepath, std::strin
 		Kmaps[idxs.z].belongTriangles.push_back(tid);
 	}
 	//calculate all triangle normal
-	std::vector<mVec3> TargetRenderTrianglesNormal;
+	std::vector<mVec3f> TargetRenderTrianglesNormal;
 	TargetRenderTrianglesNormal.reserve(TrianglesIdx.size());
 	for (auto idxs : TrianglesIdx) {
 		Triangle  tri(Vertexes[idxs.x], Vertexes[idxs.y], Vertexes[idxs.z]);
-		mVec3 normal = tri.Normal();
+		mVec3f normal = tri.Normal();
 		TargetRenderTrianglesNormal.emplace_back(normal);
 	}
 	//for vertex :normal= average(triangles normal)
-	std::vector<mVec3> VertexNormal;
+	std::vector<mVec3f> VertexNormal;
 	VertexNormal.reserve(Vertexes.size());
 	for (auto VtMAP : Kmaps) {
 		int id = VtMAP.vertexid;
@@ -135,7 +135,7 @@ void OBjReader::Load_CalculateNormal_Store(std::string inputFilepath, std::strin
 void OBjReader::Load_CalculateTextureCoordinate_Store(std::string inputFilepath, std::string outputFilepath) {
 	//load in
 	read(inputFilepath);
-	Matrix4  ModleMatrix = translateMatrix(mVec3(-125, -125, -125));
+	Matrix4  ModleMatrix = translateMatrix(mVec3f(-125, -125, -125));
 	float co = float(1.0f / 125.0f);
 	Matrix4 sm = scaleMatrix(co);
 	std::vector<mVec2<float>>STs;
@@ -144,7 +144,7 @@ void OBjReader::Load_CalculateTextureCoordinate_Store(std::string inputFilepath,
 	//thta=arctan(  squrt(x2+y2)/z)
 	//fi = arctan(y /x)
 	for (auto vertex : Vertexes) {
-		auto HomoLocal=   ModleMatrix*mVec4(vertex, 1);
+		auto HomoLocal=   ModleMatrix*mVec4f(vertex, 1);
 		HomoLocal = sm * HomoLocal;
 
 		float  fi= atan(HomoLocal.y/ HomoLocal.x); 

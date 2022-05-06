@@ -17,7 +17,7 @@
 
 
 #define MAX_DIMENTION  10
-#define MAIN_DATA_PRECISION float
+//#define MAIN_DATA_PRECISION float
 #define Radians(x) ((x)*PI/180.0)
 #define MAX(a,b)    (((a)>(b)) ?  (a):(b))
 #define MIN(a,b)    (((a)>(b)) ?  (b):(a))
