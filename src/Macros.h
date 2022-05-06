@@ -24,3 +24,9 @@
 
 #define DEFAULT_WINDOW_HEIGHT 960
 #define DEFAULT_WINDOW_WIDTH 640
+
+#if defined(_MSC_VER)
+#define STRONG_INLINE __forceinline
+#else
+#define STRONG_INLINE inline
+#endif

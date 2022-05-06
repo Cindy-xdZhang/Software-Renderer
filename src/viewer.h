@@ -6,8 +6,8 @@ extern "C" {
 }
 #include <functional>
 #include <memory>
-#include "obj.hpp"
-
+#include "obj.h"
+#include "objparser.h"
 class Viewer
 {
 
@@ -42,7 +42,7 @@ public:
     };
 
     void launch_init(
-               const char* title, int width = 0, int height = 0, bool resizable = true, bool fullscreen = false, bool maximize = false );
+               const char* title, int width = 0, int height = 0, bool resizable = true, bool fullscreen = false );
 
     void launch_rendering(bool loop = true);
     void launch_shut();
@@ -93,7 +93,7 @@ public:
     bool hack_never_moved;
 
     // Keep track of the global position of the scroll wheel
-    float scroll_position;
+    //float scroll_position;
 
     // Pointers to per-callback data
     /*void* callback_init_data;
@@ -111,9 +111,16 @@ private:
     bool shouldcloseWindow = false;
 
 
+    int initAssetsPath();
+    std::filesystem::path  m_projectRootDir;
+
     std::unique_ptr< framebuffer_t> m_framebuffer;
+    std::unique_ptr< OBjReader> m_objreader;
+
     std::unique_ptr< GraphicsPipeline> m_g_pip;
-    std::unique_ptr< RenderObject> m_object;
+    std::unique_ptr< std::vector<RenderableObject>> m_objects;
+
+
     window* windowHandle;
 
 

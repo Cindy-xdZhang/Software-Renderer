@@ -6,12 +6,12 @@ mVec3<T> mVec4<T>::tomVec3(){
 }
 
 template<typename T>
-mVec3<T>::mVec3<T>(mVec3<T> A, mVec3<T> B) :x(A.x - B.x), y(A.y - B.y), z(A.z - B.z) {
+mVec3<T>::mVec3(mVec3<T> A, mVec3<T> B) :x(A.x - B.x), y(A.y - B.y), z(A.z - B.z) {
 	//this->data = new  MAIN_DATA_PRECISION[3];
 }
 
 template<typename T>
-mVec3<T>::mVec3<T>(float a, float b, float c):x(a),y(b),z(c) {
+mVec3<T>::mVec3(float a, float b, float c):x(a),y(b),z(c) {
 }
 
 template<typename T>
@@ -25,7 +25,7 @@ template<typename T>
 }
 
  template<typename T>
- mVec3<T>::mVec3<T>(float d) : x(d), y(d), z(d) {
+ mVec3<T>::mVec3(T d) : x(d), y(d), z(d) {
 }
 
  template<typename T>
@@ -100,45 +100,37 @@ mVec3<T> mVec3<T>::operator/(T denominator) const
 
 
 template<typename T>
-mVec4<T>::mVec4<T>(mVec4<T>A, mVec4<T> B) {
-	//this->data = new  MAIN_DATA_PRECISION[3];
-	this->x = A.x - B.x;
-	this->y = A.y - B.y;
-	this->z = A.z - B.z;
-	this->z = A.w - B.w;
+mVec4<T>::mVec4(mVec4<T>A, mVec4<T> B): 
+	x(A.x - B.x), y(A.y - B.y), z(A.z - B.z), w(A.w - B.w)
+{
 }
 
 template<typename T>
-mVec4<T>::mVec4<T>(float a, float b, float c, float cd) {
+mVec4<T>::mVec4(float a, float b, float c, float cd) {
 	this->x = a;
 	this->y = b;
 	this->z = c;
 	this->w = cd;
 }
 template<typename T>
-mVec4<T>::mVec4<T>() {
-	this->x = 0;
-	this->y = 0;
-	this->z = 0;
-	this->w = 0;
-	//this->data = NULL;
+mVec4<T>::mVec4():x(0),y(0),z(0),w(0) {
 }
 template<typename T>
-mVec4<T>::mVec4<T>(float d) {
+mVec4<T>::mVec4(float d) {
 	this->x = d;
 	this->y = d;
 	this->z = d;
 	this->w = d;
 }
 template<typename T>
-mVec4<T>::mVec4<T>(mVec3<T> r, float w) {
+mVec4<T>::mVec4(mVec3<T> r, float w) {
 	this->x = r.x;
 	this->y = r.y;
 	this->z = r.z;
 	this->w = w;
 }
 template<typename T>
-mVec4<T>::~mVec4<T>() {
+mVec4<T>::~mVec4() {
 }
 template<typename T>
 mVec4<T> mVec4<T>:: operator +(const mVec4<T>& right) const {

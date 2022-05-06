@@ -11,22 +11,24 @@ class Camera
 {
 private:
 
-	float fardistance;
-	float yaw;
-	float pitch;
+	float fardistance{};
+	float yaw{};
+	float pitch{};
 	
 public:
-	float fov;
-	float r;
-	float l;
-	float b;
-	float t;
+	float fov{};
+	float r{};
+	float l{};
+	float b{};
+	float t{};
 	Camera()=default;
 	Camera(mVec3f _position, mVec3f _front, mVec3f _up);
-	mVec3f front;
-	mVec3f up;
-	mVec3f right;
-	mVec3f position;
+	float getNearPlane() const;
+	float getFarPlane() const;
+	mVec3f front{};
+	mVec3f up{};
+	mVec3f right{};
+	mVec3f position{};
 
 
 	//void Reset();
@@ -38,8 +40,6 @@ public:
 	//void Camera::UpdateTarget(mVec3f _position); 
 	Matrix4 Camera::genViewMat();
 	Matrix4 Camera::genPerspectiveMat();
-	float Camera::getNearPlane();
-	float Camera::getFarPlane();
 	//~Camera();
 };
 class ArcBallControler {
@@ -48,7 +48,7 @@ public:
 	ArcBallControler() = default;
 	ArcBallControler(int w, int h): w(w), h(h){
 	}
-	mVec3f GetArcBallPositionVector(int x, int y);
 
-	Matrix4 GetArcBallrotateMatrix(mVec3f x, mVec3f y);
+	mVec3f GetArcBallPositionVector(int x, int y) const;
+	Matrix4 GetArcBallrotateMatrix(mVec3f a, mVec3f b) const;
 };

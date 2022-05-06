@@ -7,17 +7,17 @@ class MyTimer
 {
 public:
 	inline MyTimer(void);
-	inline ~MyTimer(void);//Îö¹¹º¯Êý
+	inline ~MyTimer(void);
 
 private:
-	LARGE_INTEGER start_time;
+	LARGE_INTEGER start_time{};
 
-	LARGE_INTEGER end_time;
+	LARGE_INTEGER end_time{};
 
-	LARGE_INTEGER CPUfrenquency;
+	LARGE_INTEGER CPUfrenquency = { };
 
 public:
-	double interval;
+	double interval = 0;
 
 public:
 	inline void begin();

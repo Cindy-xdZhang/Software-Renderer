@@ -1,27 +1,97 @@
 //#include <chrono>
 #include "viewer.h"
-#include "objparser.h"
+#include <filesystem>
+#include <assert.h>
+
 using namespace std;
+namespace fs = std::filesystem;
+
+static const std::string AssetsNames[] = {
+    "KAUST_Beacon.obj",
+    "KAUST_Beacon_NormalTexture.obj",
+    "brick1.bmp"
+};
+
+
 Viewer::Viewer() {
     m_framebuffer = std::make_unique<framebuffer_t>();
+    m_objreader = std::make_unique<OBjReader>();
     m_g_pip = nullptr;
+    m_objects = make_unique<std::vector<RenderableObject>>();
 }
+
 Viewer::~Viewer() {
 
 }
-void Viewer::launch_init(const char* title, int width /*= 0*/, int height /*= 0*/, bool resizable /*= true*/ , bool fullscreen /*= false*/ , bool maximize /*= false */ )
-{
-    m_framebuffer->resize_buffer(width,height);
-    platform_initialize();
 
-    OBjReader objFilereader;
-    string Path = string("C:\\Users\\zhanx0o\\Documents\\sources\\Software-Renderer\\assets\\KAUST_Beacon_NormalTexture.obj");
-    objFilereader.read(Path);
-    m_object = std::make_unique < RenderObject>(objFilereader.TrianglesIdx, objFilereader.Vertexes, objFilereader.VertexesNormal, objFilereader.VertexesTexture);
-    m_g_pip = std::make_unique<GraphicsPipeline>(height, width);
+int  Viewer::initAssetsPath () {
+
+    fs::path Curdir = fs::absolute(fs::current_path());
+    fs::path Curdir_p = fs::absolute(Curdir.parent_path());
+    fs::path Curdir_pp = fs::absolute(Curdir_p.parent_path());
+    fs::path Curdir_ppp = fs::absolute(Curdir_pp.parent_path());
+
+    fs::path assetdir0=Curdir / "assets";
+    fs::path assetdir1 = Curdir_p/ "assets";
+    fs::path assetdir2 = Curdir_pp/ "assets";
+    fs::path assetdir3 = Curdir_ppp / "assets";
+    if (fs::exists(assetdir0)) {
+        m_projectRootDir = Curdir;
+        return EXIT_SUCCESS;
+    }
+	else if (fs::exists(assetdir1)) {
+        m_projectRootDir = Curdir_p;
+		return EXIT_SUCCESS;
+    }
+	else if (fs::exists(assetdir2)) {
+        m_projectRootDir = Curdir_pp;
+        return EXIT_SUCCESS;
+	}
+	else if (fs::exists(assetdir3)) {
+        m_projectRootDir = Curdir_ppp;
+		return EXIT_SUCCESS;
+	}
+    else {
+        return EXIT_FAILURE;
+    }
+
+}
+
+void Viewer::launch_init(const char* title, int width /*= 0*/, int height /*= 0*/, bool resizable /*= true*/ , bool fullscreen /*= false*/ )
+{
+    try
+    {
+		m_framebuffer->resize_buffer(width, height);
+		platform_initialize();
+		if (initAssetsPath() != EXIT_SUCCESS) {
+			throw("Fail: can't find assets folder!");
+		}
+		m_g_pip = std::make_unique<GraphicsPipeline>(height, width);
+		windowHandle = window_create(title, width, height);
+		fs::path  Path_obj = m_projectRootDir / "assets" / AssetsNames[1];
+		fs::path  Path_texture = m_projectRootDir / "assets" / AssetsNames[2];
+
+		m_objreader->read(Path_obj);
+		auto obj = RenderableObject(m_objreader->TrianglesIdx, m_objreader->Vertexes, m_objreader->VertexesNormal, m_objreader->VertexesTexture);
+		m_objects->push_back(obj);
+		obj.ModleMatrix *= translateMatrix(mVec3f(50, -0, -0));
+
+		m_objects->push_back(std::move(obj));
+		
+		m_g_pip->LoadTexture(Path_texture);
+
+    }
+    catch (std::string errorInfo)
+    {
+
+        std::cout << "Exception Info: " << errorInfo;
+		std::cout << "root Dir:" << m_projectRootDir.string() << "\n";
+        exit(1);
+    }
+    catch (...) {
+        exit(1);
+    }
     
-    windowHandle =window_create(title, width, height );
-    return ;
 }
 
 
@@ -39,8 +109,11 @@ void Viewer::post_draw() {
 
 void Viewer::draw(bool first) {
     pre_draw();
+    for (const auto& m_object: (* m_objects))
+    {
+        m_g_pip->Render(m_object, m_framebuffer.get());
+    }
 
-    m_g_pip->Render(*m_object, m_framebuffer.get());
     window_draw_buffer(windowHandle, m_framebuffer.get());
     post_draw();
 }

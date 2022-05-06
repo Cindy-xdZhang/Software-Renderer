@@ -1,4 +1,4 @@
-#include "Base.h"
+#include "Camera.h"
 #include "timer.hpp"
 #include <thread>
 using namespace std;
@@ -94,7 +94,7 @@ Matrix4 Camera::genPerspectiveMat() {
 }
 
 
-mVec3f ArcBallControler::GetArcBallPositionVector(int x, int y) {
+mVec3f ArcBallControler::GetArcBallPositionVector(int x, int y) const{
 	float rx = (float(2 * x) / float(w)) - 1;
 	float ry = (float(2 * y) / float(h)) - 1;
 	float square = rx * rx + ry * ry;
@@ -112,7 +112,7 @@ mVec3f ArcBallControler::GetArcBallPositionVector(int x, int y) {
 	return mVec3f(rx, ry, z);
 }
 
-Matrix4 ArcBallControler::GetArcBallrotateMatrix(mVec3f a, mVec3f b) {
+Matrix4 ArcBallControler::GetArcBallrotateMatrix(mVec3f a, mVec3f b) const {
 	float ElmentDotproduct = a * b;
 	float aValue = a.x*a.x + a.y*a.y + a.z*a.z;
 	float bValue = b.x*b.x + b.y*b.y + b.z*b.z;
@@ -128,12 +128,12 @@ Matrix4 ArcBallControler::GetArcBallrotateMatrix(mVec3f a, mVec3f b) {
 
 }
 
-float Camera::getNearPlane() {
+float Camera::getNearPlane() const {
 	float Flength = abs(b) / tan(Radians((this->fov / 2)));
 	return (Flength  * this->front.z);
 	
 }
-float Camera::getFarPlane() {
+float Camera::getFarPlane() const {
 	return (fardistance * this->front.z);
 
 }

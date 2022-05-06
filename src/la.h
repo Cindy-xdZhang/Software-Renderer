@@ -9,7 +9,7 @@ struct mVec2{
 	T x;
 	T y;
 	mVec2 < T >() = default;
-	inline mVec2 < T >(T x, T y) :x(x), y(y) {
+	STRONG_INLINE mVec2 < T >(T x, T y) :x(x), y(y) {
 	}
 
 	mVec2 < T >(const mVec2 < T >&other) :x(other.x), y(other.y) {
@@ -21,7 +21,7 @@ struct mVec2{
 		return *this;
 	}
 
-	mVec2<T>(mVec2<T> && other) :x(std::move(other.x)), y(std::move(other.y))  {
+	mVec2<T>(mVec2<T> && other) noexcept:x(std::move(other.x)), y(std::move(other.y))  {
 	}
 
 	mVec2<T>& operator=(mVec2<T> && rhs)  {
@@ -30,13 +30,13 @@ struct mVec2{
 		return *this;
 	}
 
-	inline mVec2<T> operator +(mVec2<T>& right) const {
+	STRONG_INLINE mVec2<T> operator +(const  mVec2<T>& right) const {
 		return { right.x + x,right.y + y };
 	}
-	inline mVec2<T> operator -(mVec2<T>& right) const{
+	STRONG_INLINE mVec2<T> operator -(const  mVec2<T>& right) const{
 		return { x- right.x ,y-right.y };
 	}
-	inline mVec2<T> operator *(float right) const {
+	STRONG_INLINE mVec2<T> operator *(float right) const {
 		return { x * right ,y * right};
 	}
 	
@@ -68,31 +68,31 @@ public:
 
 	mVec3(mVec3 A, mVec3 B);
 	mVec3(float a, float b, float c);
-	inline mVec3(mVec3&& other):x(other.x), y(other.y),z(other.z) {
+	STRONG_INLINE mVec3(mVec3&& other)noexcept :x(other.x), y(other.y),z(other.z) {
 	}
-	inline mVec3(const mVec3& other) : x(other.x), y(other.y), z(other.z) {
+	STRONG_INLINE mVec3(const mVec3& other) noexcept : x(other.x), y(other.y), z(other.z)  {
 	}
-	inline mVec3& operator =(const mVec3&) = default;
-	inline mVec3& operator =( mVec3&&) = default;
+	STRONG_INLINE mVec3& operator =(const mVec3&) = default;
+	STRONG_INLINE mVec3& operator =( mVec3&&) = default;
 
 	mVec3()=default;
-	inline mVec3(float d);
+	STRONG_INLINE mVec3(T d);
 	~mVec3() = default;
-	inline mVec3 operator +(const mVec3& right) const;
-	inline void operator +=(const mVec3& right);
-	inline void operator -=(const mVec3& right);
-	inline mVec3 operator -(const mVec3& right) const;
+	STRONG_INLINE mVec3 operator +(const mVec3& right) const;
+	STRONG_INLINE void operator +=(const mVec3& right);
+	STRONG_INLINE void operator -=(const mVec3& right);
+	STRONG_INLINE mVec3 operator -(const mVec3& right) const;
 
-	inline void mVec3<T>::operator *=(T scale);
-	inline mVec3<T> mVec3<T>::operator *(T scale) const;
-	inline T operator *(const mVec3<T>& right) const;
-	inline mVec3<T> operator/(T denominator) const;
+	STRONG_INLINE void mVec3<T>::operator *=(T scale);
+	STRONG_INLINE mVec3<T> mVec3<T>::operator *(T scale) const;
+	STRONG_INLINE T operator *(const mVec3<T>& right) const;
+	STRONG_INLINE mVec3<T> operator/(T denominator) const;
 
 
 
 
 	
-	inline void normalize() {
+	STRONG_INLINE void normalize() {
 		T ma = static_cast<T>(this->getEuclideannNorms());
 		(*this) *= (1 / ma);
 	}
@@ -101,7 +101,14 @@ public:
 
 	mVec3 cross_product(const mVec3 & right) const;
 	
-	T getAngle(const mVec3& right)const;
+	T getAngle(const mVec3& right)const{
+		T dot_product = (*this) * right;
+		auto ma = this->getEuclideannNorms();
+		auto mb = right.getEuclideannNorms();
+		dot_product /= (ma * mb);
+		return acos(dot_product) * 180.0 / PI;
+	}
+
 	void ColorClamp();
 	
 };
@@ -110,7 +117,7 @@ public:
 
 
 template<typename T = float>
-inline  mVec3<T>  normalize(mVec3<T> Iu) {
+STRONG_INLINE  mVec3<T>  normalize(mVec3<T> Iu) {
 	T ma = static_cast<T>(Iu.getEuclideannNorms());
 	mVec3<T> tmp = Iu;
 	tmp *= (1 / ma);
@@ -141,7 +148,9 @@ public:
 	}
 
 	mVec3<T> tomVec3();
-	mVec4(mVec4 A, mVec4 B);
+	//mVec4(mVec4 A, mVec4 B);
+	mVec4(mVec4<T>A, mVec4<T> B);
+
 	mVec4(float a, float b, float c, float cd);
 	mVec4();
 	mVec4(float d);
@@ -180,10 +189,12 @@ using mVec4f = mVec4<float>;
 class Triangle {
 public:
 	mVec3f a, b, c;
-	__forceinline Triangle(mVec3f a, mVec3f b, mVec3f c) :a(a), b(b), c(c) {
+	STRONG_INLINE Triangle(mVec3f a, mVec3f b, mVec3f c) :a(a), b(b), c(c) {
 	}
 	Triangle() = default;
-	__forceinline  mVec2<float> Triangle::PointIsInTriangle(const mVec3f & p) const {
+
+	//[[msvc::forceinline_calls ]] 
+	STRONG_INLINE mVec2<float> Triangle::PointIsInTriangle(const mVec3f& p) const {
 		//P = A + u * (C - A) + v * (B - A)       // Original equation
 		//	(P - A) = u * (C - A) + v * (B - A)     // Subtract A from both sides
 		//	v2 = u * v0 + v * v1                    // Substitute v0, v1, v2 for less writing
