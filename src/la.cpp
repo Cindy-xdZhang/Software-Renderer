@@ -60,6 +60,45 @@ mVec3<T> mVec3<T>::cross_product(const mVec3<T>& right) const {
 
 
 
+
+
+template<typename T>
+void mVec3<T>::operator *=(T scale) {
+	this->x *= scale;
+	this->y *= scale;
+	this->z *= scale;
+}
+template<typename T>
+mVec3<T> mVec3<T>::operator *(T scale) const {
+	return mVec3<T>(this->x * scale, this->y * scale, this->z * scale);
+}
+
+template<typename T>
+T mVec3<T>::operator *(const mVec3<T>& right) const {
+	T ans = 0;
+	ans += this->x * right.x;
+	ans += this->y * right.y;
+	ans += this->z * right.z;
+	return ans;
+}
+
+
+template<typename T /*= float*/>
+mVec3<T> mVec3<T>::operator/(T denominator) const
+{
+	T scale = static_cast<T>(1.0f / denominator);
+	return mVec3<T>(this->x * scale, this->y * scale, this->z * scale);
+}
+
+
+
+
+
+
+
+
+
+
 template<typename T>
 mVec4<T>::mVec4<T>(mVec4<T>A, mVec4<T> B) {
 	//this->data = new  MAIN_DATA_PRECISION[3];

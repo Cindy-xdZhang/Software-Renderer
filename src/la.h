@@ -83,39 +83,19 @@ public:
 	inline void operator -=(const mVec3& right);
 	inline mVec3 operator -(const mVec3& right) const;
 
+	inline void mVec3<T>::operator *=(T scale);
+	inline mVec3<T> mVec3<T>::operator *(T scale) const;
+	inline T operator *(const mVec3<T>& right) const;
+	inline mVec3<T> operator/(T denominator) const;
+
+
+
+
+	
 	inline void normalize() {
 		T ma = static_cast<T>(this->getEuclideannNorms());
 		(*this) *= (1 / ma);
 	}
-	inline mVec3  normalize(mVec3 I) {
-		T ma = static_cast<T>(this->getEuclideannNorms());
-		return I * (1 / ma);
-	}
-	inline void  operator *=(T scale) {
-		this->x *= scale;
-		this->y *= scale;
-		this->z *= scale;
-	}
-
-	inline mVec3 operator *(T scale) const {
-		return mVec3(this->x * scale, this->y * scale, this->z * scale);
-	}
-
-	T operator *(const mVec3& right) const { 
-		T ans = 0;
-		ans += this->x * right.x;
-		ans += this->y * right.y;
-		ans += this->z * right.z;
-		return ans;
-	}
-
-
-	mVec3 operator /(T denominator) const {
-		float scale = 1.0f / denominator;
-		return mVec3(this->x * scale, this->y * scale, this->z * scale);
-
-	}
-
 
 
 
@@ -123,7 +103,11 @@ public:
 	
 	T getAngle(const mVec3& right)const;
 	void ColorClamp();
+	
 };
+
+
+
 
 template<typename T = float>
 inline  mVec3<T>  normalize(mVec3<T> Iu) {
@@ -134,7 +118,11 @@ inline  mVec3<T>  normalize(mVec3<T> Iu) {
 }
 
 
-template<typename T=float>
+
+
+
+
+template<typename T = float>
 class mVec4 {
 public:
 	T x;
