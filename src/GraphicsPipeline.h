@@ -8,6 +8,9 @@
 #include <mutex>
 #include "isocontour.h"
 
+
+
+
 enum MeshBuildConvention {
 	LIKE_GL_TRIANGLE,
 	LIKE_GL_TRIANGLE_STRIP
@@ -26,12 +29,6 @@ typedef struct vertex {
 	mVec3f shading;
 	mVec3f EyeSpaceCoordinate;
 	mVec2<float> st;
-	//vertex operator+(vertex right) {
-	//	return { Coordinate + right.Coordinate,normal + right.normal, shading + right.shading, EyeSpaceCoordinate + right.EyeSpaceCoordinate };
-	//}
-	//vertex operator*(float right) {
-	//	return { Coordinate * right,normal * right, shading * right, EyeSpaceCoordinate * right };
-	//}
 }vtx;
 
 
@@ -52,6 +49,8 @@ struct fragment {
 	fragment& operator=(const fragment& other) = default;
 };
 
+
+
 struct ShadingMaterial {
 	mVec3f Ka;
 	mVec3f Kd;
@@ -63,18 +62,18 @@ struct ShadingMaterial {
 
 class TriangleWithAttributes {
 public:
-	vtx a, b, c;
-	inline TriangleWithAttributes(vtx a, vtx b, vtx c) :a(a), b(b), c(c) {
+	vtx vtxa, vtxb, vtxc;
+	inline TriangleWithAttributes(vtx a, vtx b, vtx c) :vtxa(a), vtxb(b), vtxc(c) {
 	}
 	inline TriangleWithAttributes(mVec3f ai, mVec3f bi, mVec3f ci) {
-		a.Coordinate = ai;
-		b.Coordinate = bi;
-		c.Coordinate = ci;
+		vtxa.Coordinate = ai;
+		vtxb.Coordinate = bi;
+		vtxc.Coordinate = ci;
 	}
 	TriangleWithAttributes() = default;
 	inline mVec3f Normal() {
-		mVec3f L1(a.Coordinate, c.Coordinate);
-		mVec3f L2(b.Coordinate, c.Coordinate);
+		mVec3f L1(vtxa.Coordinate, vtxc.Coordinate);
+		mVec3f L2(vtxb.Coordinate, vtxc.Coordinate);
 		mVec3f out = L2.cross_product(L1);
 		out.normalize();
 		/*	mVec3f out2 = L1.cross_product(L2);
@@ -83,7 +82,7 @@ public:
 
 	}
 	inline Triangle GetTriangleVertexes() const{
-		return  Triangle(this->a.Coordinate, this->b.Coordinate, this->c.Coordinate);
+		return  Triangle(this->vtxa.Coordinate, this->vtxb.Coordinate, this->vtxc.Coordinate);
 
 	}
 	
@@ -93,6 +92,7 @@ public:
 class RenderableObject {
 private:
 	ShadingMaterial shma;	// material
+	unsigned int texturechannelID = 0;
 public:
 	
 	std::vector<mVec3i> TrianglesIdx;
@@ -187,16 +187,18 @@ private:
 
 	float* depthbuffer = NULL;
 	STRONG_INLINE  void VertexesProcess(const RenderableObject& yu);
-	STRONG_INLINE mVec3f ADSshading(mVec3f point, mVec3f normal, ShadingMaterial Mp) const;	
+
 	STRONG_INLINE void Rasterization(const ShadingMaterial& myu, framebuffer_t* Fb) const;
 	//inline void FragmentProcess(framebuffer_t* Fb);
 
-	mVec3f LightSource;
+	std::vector<mVec3f> Buffers[MAXIMUM_GPIPELINE_BUFFERS];
+	std::vector<TriangleWithAttributes>TargetRenderTriangles;
 
-	std::vector<TriangleWithAttributes> TargetRenderTriangles;
+
 	//std::vector<std::vector<fragment>> FragmentsAfterRasterization;
 	std::vector<Texture>mTextures;
 };
+
 
 
 

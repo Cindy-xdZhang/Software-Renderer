@@ -142,6 +142,7 @@ public:
 	}
 
 	mVec3<T> tomVec3();
+	STRONG_INLINE	mVec3<T> HomoCordinates2InHomoVec3();
 	//mVec4(mVec4 A, mVec4 B);
 	mVec4(mVec4<T>A, mVec4<T> B);
 
@@ -211,13 +212,22 @@ public:
 	mVec3f Triangle::Normal(mVec3f dir);
 };
 
+template <typename T=float>
 class Plane
 {
 public:
-	mVec3f n;		// normal
-	mVec3f px;	// solution to dot(n,p-p')=0  d
+	mVec3<T> n;		// normal
+	mVec3<T> ptx;	// solution to dot(n,p-p')=0  d
 
 	Plane() = default;
-	Plane(mVec3f pm, mVec3f n);
+	STRONG_INLINE Plane(mVec3<T>pm, mVec3<T>n) :ptx(pm), n(n) {
+	}
+	STRONG_INLINE T cal_project_distance(mVec3<T> point) const ;
+	STRONG_INLINE T cal_intersectRatio(mVec3f ptx1, mVec3f ptx2) const;
 };
+
+
+
+
+
 //int clip_with_plane(Plane c_plane, std::vector<mVec3> vert_list, std::vector<mVec3>& in_list);

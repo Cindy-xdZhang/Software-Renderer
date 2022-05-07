@@ -25,6 +25,9 @@
 #define DEFAULT_WINDOW_HEIGHT 720
 #define DEFAULT_WINDOW_WIDTH  1024
 
+#define MAXIMUM_GPIPELINE_BUFFERS 8
+
+
 #if defined(_MSC_VER)
 #define STRONG_INLINE __forceinline
 #elif defined(__GNUC__)

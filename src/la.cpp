@@ -4,6 +4,14 @@ template<typename T>
 mVec3<T> mVec4<T>::tomVec3(){
 	return mVec3<T>(this->x, this->y, this->z);
 }
+template<typename T /*= float*/>
+ mVec3<T> mVec4<T>::HomoCordinates2InHomoVec3()
+{
+	mVec4<T>tmp = (* this) / this->w;
+	return {tmp.x, tmp.y, tmp.z};
+}
+
+
 
 template<typename T>
 mVec3<T>::mVec3(mVec3<T> A, mVec3<T> B) :x(A.x - B.x), y(A.y - B.y), z(A.z - B.z) {
@@ -211,11 +219,20 @@ mVec3f Triangle::Normal() {
 
 }
 
- 
 
- Plane::Plane(mVec3f pm, mVec3f n) :px(pm), n(n) {
+template <typename T/*=float*/>
+T Plane<T>::cal_project_distance(mVec3<T> point) const
+{
+	return (point - this->ptx) * this.n;
 }
+template <typename T/*=float*/>
+T Plane<T>::cal_intersectRatio(mVec3f ptx1, mVec3f ptx2) const{
+	T d1 = cal_project_distance(ptx1);
+	T d2 = cal_project_distance(ptx2);
 
+	return d1 /(d1 -d2);
+};
+ 
  template mVec3<int>;
  template mVec3<float>;
  template mVec4<float>;

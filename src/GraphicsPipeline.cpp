@@ -22,15 +22,47 @@ using namespace cimg_library;
 //6.pbr ggx 
 //7.water surface
 
+
+mVec3f InitLightPos = mVec3f(0, 10, 0);
+float texture_scaling = 100;
+
+static mVec3f LightSourceEyeSpace ;
 static mVec3f InitEyePos = mVec3f(0, 0, 20);
 static mVec3f InitGazeDirection = mVec3f(0, 0, -1);
 static mVec3f InitTopDirection = mVec3f(0, 1, 0);
-mVec3f InitLightPos = mVec3f(0, 10, 0);
- float texture_scaling = 100;
+ //static std::map<std::string, unsigned int >bufferConvention={
+//"position": 0,
+//"normal" : 1,
+//"textureuv" : 2,
+//"per-vertex lighting " : 3,
+//"eyespace coordinate": 4,
+//"screen space coordinate": 5,
+//};
 
-
-
-
+ STRONG_INLINE  mVec3f ADSshading(const mVec3f &eye, const mVec3f& aLightSource, const mVec3f& point, const mVec3f& normal, const ShadingMaterial& Mp) {
+	 mVec3f Ia = Mp.Ka * LI;
+	 mVec3f  Sourse = aLightSource;
+	 //Reflection
+	 mVec3f ReflectionD = mVec3f(Sourse, point);
+	 float distance2 = pow((Sourse.x - point.x), 2) + pow((Sourse.y - point.y), 2) + pow((Sourse.z - point.z), 2);
+	 float Intensity = (LI / distance2);
+	 mVec3f light_dir(Sourse, point);
+	 mVec3f eye_dir(eye, point);
+	 light_dir.normalize();
+	 eye_dir.normalize();
+	 //normal.normalize();
+	 mVec3f h = (eye_dir + light_dir);
+	 h.normalize();
+	 float dotproduct = normal * light_dir;
+	 mVec3f Id = Mp.Kd * Intensity * (dotproduct > 0 ? dotproduct : 0);
+	 float dotproduct2 = normal * h;
+	 float tmp = dotproduct2 > 0.0f ? dotproduct2 : 0.0f;
+	 tmp = pow(tmp, Mp.f);
+	 mVec3f Is = Mp.Ks * Intensity * tmp;
+	 mVec3f  If = (Is + Id + Ia);
+	 If.ColorClamp();
+	 return If;
+ };
 
 
 
@@ -123,39 +155,15 @@ void  GraphicsPipeline::LoadTexture(std::string stringPath) {
 
 void GraphicsPipeline::VertexesProcess(const RenderableObject& yu) {
 
-	auto Vertexshading = [this](mVec3f point, mVec3f normal, ShadingMaterial Mp) {
-		mVec3f Ia = Mp.Ka * LI;
-		mVec3f  Sourse = LightSource;
-		mVec3f eye = mVec3f(0, 0, 0);
-		//Reflection
-		mVec3f ReflectionD = mVec3f(Sourse, point);
-		float distance2 = pow((Sourse.x - point.x), 2) + pow((Sourse.y - point.y), 2) + pow((Sourse.z - point.z), 2);
-		float Intensity = (LI / distance2);
-		mVec3f light_dir(Sourse, point);
-		mVec3f eye_dir(eye, point);
-		light_dir.normalize();
-		eye_dir.normalize();
-		mVec3f h = (eye_dir + light_dir);
-		h.normalize();
-		float dotproduct = normal * light_dir;
-		mVec3f Id = Mp.Kd * Intensity * (dotproduct > 0 ? dotproduct : 0);
-		float dotproduct2 = normal * h;
-		float tmp = dotproduct2 > 0.0f ? dotproduct2 : 0.0f;
-		tmp = pow(tmp, Mp.f);
-		mVec3f Is = Mp.Ks * Intensity * tmp;
-		mVec3f  If = (Is + Id + Ia);
-		If.ColorClamp();
-		return If;
-	};
+	
 
 	//-------------------------------
 	//**** Per-vertex Operation  ****
-	//Note:
 	//Matrix4 P = squashMatrix(_Camera.getNearPlane(), _Camera.getFarPlane());
 	//Matrix4 Ortho = OrthoMatrix(_Camera.r, _Camera.l, _Camera.t, _Camera.b, _Camera.getNearPlane(), _Camera.getFarPlane());
 	//Per=Ortho*P
 	//-------------------------------
-	//GET M V,P VP matrix
+
 	Matrix4 M = yu.ModleMatrix;
 	Matrix4 V = _Camera.genViewMat();
 	Matrix4 Per = _Camera.genPerspectiveMat();
@@ -165,12 +173,10 @@ void GraphicsPipeline::VertexesProcess(const RenderableObject& yu) {
 	Matrix4 PersViewPort = (Vp * Per);
 	Matrix4 NoramlViewModel = inv(ViewModel).Transpose();
 
-
-	//-------------------------------
 	// apply  MVP projction +Pervertex lighting
-	//-------------------------------
 	mVec4f LightSourceHomo = V * mVec4f(InitLightPos, 1);
-	LightSource = LightSourceHomo.tomVec3();
+	LightSourceEyeSpace = (LightSourceHomo/ LightSourceHomo.w).tomVec3();
+
 
 	int Vid = 0;
 	std::vector<vertex>TargetRenderVertexes;
@@ -180,16 +186,19 @@ void GraphicsPipeline::VertexesProcess(const RenderableObject& yu) {
 		//  Model + View  transformation
 		//-------------------------------
 		mVec4f EyeSpaceHomoCoordinates = (ViewModel * mVec4f(Vertex, 1));
+		mVec3f EyeSpaceCoordinates = EyeSpaceHomoCoordinates.HomoCordinates2InHomoVec3();
+
 		mVec3f vertex_normal = (NoramlViewModel * mVec4f(yu.VertexesNormal[Vid], 0)).tomVec3();
 		//-------------------------------
 		//Pervertex  LightSource
 		//-------------------------------
-		mVec3f shading = Vertexshading(EyeSpaceHomoCoordinates.tomVec3(), yu.VertexesNormal[Vid], yu.Material());
+		mVec3f shading = ADSshading({0,0,0},LightSourceEyeSpace, EyeSpaceCoordinates, yu.VertexesNormal[Vid], yu.Material());
 		//-------------------------------
 		//Perpective + Viewport transformation
 	   //-------------------------------
 		mVec4f ScreenSpaceHomoCoordinates = (PersViewPort * EyeSpaceHomoCoordinates);
 		ScreenSpaceHomoCoordinates = ScreenSpaceHomoCoordinates / ScreenSpaceHomoCoordinates.w;
+
 
 		vertex tmp = { ScreenSpaceHomoCoordinates.tomVec3(),vertex_normal,shading, EyeSpaceHomoCoordinates.tomVec3(),yu.VtxTexUV[Vid] };
 		TargetRenderVertexes.emplace_back(tmp);
@@ -197,18 +206,16 @@ void GraphicsPipeline::VertexesProcess(const RenderableObject& yu) {
 
 	}
 
+
+
 	//-------------------------------
 	//primitives assembly
 	//-------------------------------
 	TargetRenderTriangles.reserve(yu.TrianglesIdx.size());
 	for (auto idxs : yu.TrianglesIdx) {
-	//# TODO: Clip
-		//if (TargetRenderVertexes[idxs.x].EyeSpaceCoordinate.z>0&& TargetRenderVertexes[idxs.y].EyeSpaceCoordinate.z > 0&& TargetRenderVertexes[idxs.z].EyeSpaceCoordinate.z > 0)
-		//{
 			TargetRenderTriangles.emplace_back(TriangleWithAttributes(TargetRenderVertexes[idxs.x], TargetRenderVertexes[idxs.y], TargetRenderVertexes[idxs.z]));
-	//	}
 	}
-
+	//# TODO: Clip
 
 
 
@@ -224,32 +231,6 @@ static inline T PerspetiveCorrectDepth(T iaz, T ibz, T icz, T uv_u, T uv_v) {
 }
 
 
-
-mVec3f GraphicsPipeline::ADSshading(mVec3f point, mVec3f normal, ShadingMaterial Mp) const {
-	mVec3f Ia = Mp.Ka * LI;
-	mVec3f  Sourse = LightSource;
-	mVec3f eye = _Camera.position;
-	//Reflection
-	mVec3f ReflectionD = mVec3f(Sourse, point);
-	float distance2 = pow((Sourse.x - point.x), 2) + pow((Sourse.y - point.y), 2) + pow((Sourse.z - point.z), 2);
-	float Intensity = (LI / distance2);
-	mVec3f light_dir(Sourse, point);
-	mVec3f eye_dir(eye, point);
-	light_dir.normalize();
-	eye_dir.normalize();
-	//normal.normalize();
-	mVec3f h = (eye_dir + light_dir);
-	h.normalize();
-	float dotproduct = normal * light_dir;
-	mVec3f Id = Mp.Kd * Intensity * (dotproduct > 0 ? dotproduct : 0);
-	float dotproduct2 = normal * h;
-	float tmp = dotproduct2 > 0.0f ? dotproduct2 : 0.0f;
-	tmp = pow(tmp, Mp.f);
-	mVec3f Is = Mp.Ks * Intensity * tmp;
-	mVec3f  If = (Is + Id + Ia);
-	If.ColorClamp();
-	return If;
-};
 
 
 void GraphicsPipeline::Rasterization(const ShadingMaterial& myu, framebuffer_t* Fb) const
@@ -272,10 +253,10 @@ void GraphicsPipeline::Rasterization(const ShadingMaterial& myu, framebuffer_t* 
 		mVec3f tmp;
 		if (UsePhongShading) {
 			//interpolate normal
-			mVec3f normal = Tri.a.normal + ((Tri.c.normal - Tri.a.normal) * uv.x + (Tri.b.normal - Tri.a.normal) * uv.y);
+			mVec3f normal = Tri.vtxa.normal + ((Tri.vtxc.normal - Tri.vtxa.normal) * uv.x + (Tri.vtxb.normal - Tri.vtxa.normal) * uv.y);
 			normal.normalize();//normal in eyespace,light source in eyespace
-			mVec3f point = Tri.a.EyeSpaceCoordinate * (1 - uv.x - uv.y) + (Tri.c.EyeSpaceCoordinate * uv.x) + (Tri.b.EyeSpaceCoordinate * uv.y);
-			tmp = ADSshading(point, normal, myu);
+			mVec3f point = Tri.vtxa.EyeSpaceCoordinate * (1 - uv.x - uv.y) + (Tri.vtxc.EyeSpaceCoordinate * uv.x) + (Tri.vtxb.EyeSpaceCoordinate * uv.y);
+			tmp = ADSshading({ 0,0,0 }, LightSourceEyeSpace,point, normal, myu);
 
 			//stripe texture
 			if (TextureMode== 1) {
@@ -283,7 +264,7 @@ void GraphicsPipeline::Rasterization(const ShadingMaterial& myu, framebuffer_t* 
 				float scale = texture_scaling;
 				float fuzz = 2;
 				float width = 10;
-				mVec2<float> Texcoords = Tri.a.st + ((Tri.c.st - Tri.a.st) * uv.x + (Tri.b.st - Tri.a.st) * uv.y);
+				mVec2<float> Texcoords = Tri.vtxa.st + ((Tri.vtxc.st - Tri.vtxa.st) * uv.x + (Tri.vtxb.st - Tri.vtxa.st) * uv.y);
 				//	Texcoords = Texcoords * interpolateZ;
 				float scaleT = fract(Texcoords.y * scale);
 
@@ -297,7 +278,7 @@ void GraphicsPipeline::Rasterization(const ShadingMaterial& myu, framebuffer_t* 
 			}
 			else if (TextureMode == 2) {
 				float scale = texture_scaling;
-				mVec2<float> Texcoords = Tri.a.st + ((Tri.c.st - Tri.a.st) * uv.x + (Tri.b.st - Tri.a.st) * uv.y);
+				mVec2<float> Texcoords = Tri.vtxa.st + ((Tri.vtxc.st - Tri.vtxa.st) * uv.x + (Tri.vtxb.st - Tri.vtxa.st) * uv.y);
 				Texcoords = Texcoords* interpolateZ;
 				Texcoords.x = fract(Texcoords.x * scale);
 				Texcoords.y = fract(Texcoords.y * scale);
@@ -311,7 +292,7 @@ void GraphicsPipeline::Rasterization(const ShadingMaterial& myu, framebuffer_t* 
 		}
 		else {
 			//interpolate lighnting
-			tmp = Tri.a.shading * (1 - uv.x - uv.y) + (Tri.c.shading * uv.x) + (Tri.b.shading * uv.y);
+			tmp = Tri.vtxa.shading * (1 - uv.x - uv.y) + (Tri.vtxc.shading * uv.x) + (Tri.vtxb.shading * uv.y);
 
 
 		}
@@ -379,9 +360,9 @@ void GraphicsPipeline::Rasterization(const ShadingMaterial& myu, framebuffer_t* 
 		//RasterResult.reserve((Xmax - Xmin)* (Ymax - Ymin) * 8);
 
 		//early-z
-		const float iaz = 1.0f / (TriWithAtrib.a.Coordinate.z - depthA);
-		const float ibz = 1.0f / (TriWithAtrib.b.Coordinate.z - depthA);
-		const float icz = 1.0f / (TriWithAtrib.c.Coordinate.z - depthA);
+		const float iaz = 1.0f / (TriWithAtrib.vtxa.Coordinate.z - depthA);
+		const float ibz = 1.0f / (TriWithAtrib.vtxb.Coordinate.z - depthA);
+		const float icz = 1.0f / (TriWithAtrib.vtxc.Coordinate.z - depthA);
 
 
 
@@ -482,7 +463,6 @@ void GraphicsPipeline::clearPipeline() {
 	//	FragmentsAfterRasterization.swap(vector<fragment>());
 }
 
-
 GraphicsPipeline::GraphicsPipeline(int h, int w) : window_height(h), window_width(w) {
 	//mTextures.emplace_back(LoadTexture());
 
@@ -497,96 +477,59 @@ GraphicsPipeline::GraphicsPipeline(int h, int w) : window_height(h), window_widt
 
 };
 
-typedef struct vertex4 {
-	mVec4 Coordinate;
 
-	//attributes
-	mVec3f normal;
-	mVec3f shading;
-	mVec3f EyeSpaceCoordinate;
-	//mVec2<float> st;
-	vertex4 operator+(vertex4 right) {
-		return { Coordinate + right.Coordinate,normal + right.normal, shading + right.shading, EyeSpaceCoordinate + right.EyeSpaceCoordinate };
-	}
-	vertex4 operator*(float right) {
-		return { Coordinate * right,normal * right, shading * right, EyeSpaceCoordinate * right };
-	}
-};
-class Vertex4TriangleWithAttributes {
-public:
-	vertex4  a, b, c;
-	/*inline Triangle GetTriangleVertexes() {
-		return  Triangle(this->a.Coordinate.tomVec3f(), this->b.Coordinate.tomVec3f(), this->c.Coordinate.tomVec3f());
 
-	}*/
-	Vertex4TriangleWithAttributes(vertex4 a, vertex4 b, vertex4 c) :a(a), b(b), c(c) {
 
-	}
-	TriangleWithAttributes toTriangleWithAttributes() {
-		vertex  a1 = { a.Coordinate.tomVec3f(),a.normal,a.shading,a.EyeSpaceCoordinate };
-		vertex	b1 = { b.Coordinate.tomVec3f(),b.normal,b.shading,b.EyeSpaceCoordinate };
-		vertex	c1 = { c.Coordinate.tomVec3f(),a.normal,c.shading,c.EyeSpaceCoordinate };
-		return TriangleWithAttributes(a1, b1, c1);
-	}
-};
-//clip_plane为裁剪平面的自定义结构体，vert_list存储了待裁剪凸多边形的所有顶点
-//num_vert为顶点个数，in_list为需要保留下来的裁剪平面内侧顶点的列表
-void clip_with_plane(Plane c_plane, std::vector<Vertex4TriangleWithAttributes> in_list, std::vector<Vertex4TriangleWithAttributes>& out_list) {
-	auto cal_project_distance = [](Plane ic_plane, mVec3f ptx) ->float {
-		return (ptx - ic_plane.px) * ic_plane.n;
-	};
-	auto cal_insertRatio = [](Plane ic_plane, mVec3f ptx1, mVec3f ptx2) ->float {
-		float a = ic_plane.n * ptx1 - ic_plane.n * ic_plane.px;
-		float b = ic_plane.n * (ptx1 - ptx2);
+#if 0
+void clip_with_plane(const Plane<float>& c_plane, std::vector<TriangleWithAttributes>& in_list,
+	std::vector<TriangleWithAttributes>& outer_list) {
 
-		return a / b;
-	};
-	for (auto triangle : in_list) {
-		int i;
-		vertex4 vert_list[3] = { triangle.a,  triangle.b, triangle.c };
-
+	for (auto& triangle : in_list) {
+		int in_vert_num = 0;
 		int previous_index, current_index;
-		vertex4 remainPoints[4];
-		int remaincount = 0;
-		for (i = 0; i < 3; i++)
+		mVec3f thisTriangleVertices[3] = {
+			triangle.vtxa.EyeSpaceCoordinate,
+			triangle.vtxb.EyeSpaceCoordinate,
+			triangle.vtxc.EyeSpaceCoordinate
+		};
+		mVec4f remainPoints[4];
+		int remain_vert_num = 0;
+		for (int i = 0; i < 3; i++)
 		{
-			//从最后一个点开始，遍历所有边
 			current_index = i;
 			previous_index = (i - 1 + 3) % 3;
-			mVec3f pre_vertex = vert_list[previous_index].Coordinate.tomVec3f(); //边的起始点
-			mVec3f cur_vertex = vert_list[current_index].Coordinate.tomVec3f();  //边的终止点
+			mVec3f pre_vertex = thisTriangleVertices[previous_index]; //
+			mVec3f cur_vertex = thisTriangleVertices[current_index];  //
 
-			float d1 = cal_project_distance(c_plane, pre_vertex);
-			float d2 = cal_project_distance(c_plane, cur_vertex);
+			float d1 = c_plane.cal_project_distance(pre_vertex);
+			float d2 = c_plane.cal_project_distance(cur_vertex);
 
-			//如果该边与裁剪平面有交点，则计算交点并存入in_list
 			if (d1 * d2 < 0)
 			{
-				float t = cal_insertRatio(c_plane, pre_vertex, cur_vertex);//求出t值
-				vertex4 intersectionPostion = vert_list[current_index] + vert_list[previous_index] * (1 - t);
-				remainPoints[remaincount++] = intersectionPostion;
+				float t = c_plane.cal_intersectRatio(pre_vertex, cur_vertex);
+				mVec3f intersectionPostion = cur_vertex + pre_vertex * (1 - t);
+				remainPoints[remain_vert_num++] = { intersectionPostion ,t };
 
 			}
-			//如果终止点在内侧，直接存入in_list
 			if (d2 < 0)
 			{
-				remainPoints[remaincount++] = vert_list[current_index];
+				remainPoints[remain_vert_num++] = { cur_vertex ,1.0f };
 			}
-
-
-
 		}
-		if (remaincount == 3) {
-			out_list.emplace_back(Vertex4TriangleWithAttributes(remainPoints[0], remainPoints[1], remainPoints[2]));
 
-		}
-		else	if (remaincount == 4) {
-			out_list.emplace_back(Vertex4TriangleWithAttributes(remainPoints[0], remainPoints[1], remainPoints[2]));
-			out_list.emplace_back(Vertex4TriangleWithAttributes(remainPoints[1], remainPoints[2], remainPoints[3]));
-		}
-		else if (remaincount != 0) {
-			std::cout << " Unknown Error!";
-		}
+		//if (remain_vert_num == 3) {
+		//	TriangleWithAttributes
+		//	outer_list.emplace_back(Vertex4TriangleWithAttributes(remainPoints[0], remainPoints[1], remainPoints[2]));
+
+		//}
+		//else	if (remain_vert_num == 4) {
+		//	outer_list.emplace_back(Vertex4TriangleWithAttributes(remainPoints[0], remainPoints[1], remainPoints[2]));
+		//	outer_list.emplace_back(Vertex4TriangleWithAttributes(remainPoints[1], remainPoints[2], remainPoints[3]));
+		//}
+		//else if (remain_vert_num != 0) {
+		//	std::cout << "E: Unknown Error!";
+		//	return;
+		//}
 
 
 
@@ -595,4 +538,7 @@ void clip_with_plane(Plane c_plane, std::vector<Vertex4TriangleWithAttributes> i
 
 	return;
 }
+
+#endif
+
 
