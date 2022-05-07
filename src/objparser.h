@@ -14,6 +14,7 @@ public:
 	std::vector<mVec3f> VertexesNormal;
 	std::vector<mVec3i> TrianglesIdx;
 
+	static std::vector<mVec2<float>> AssignTextureCoordinates(const std::vector<mVec3f>& vtxs);
 
 	void readObjFile(const std::string& Filepath);
 	void OBjReader::Load_CalculateNormal_Store(std::string inputFilepath, std::string outputFilepath);

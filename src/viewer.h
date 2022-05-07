@@ -63,6 +63,7 @@ private:
 
     void init_callbacks();
 
+    void init_demo_scene();
     int  initAssetsPath();
     std::filesystem::path  m_projectRootDir;
 

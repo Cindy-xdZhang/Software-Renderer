@@ -43,12 +43,6 @@ struct mVec2{
 };
 
 
-struct mVec3i {
-	int x;
-	int y;
-	int z;
-
-};
 
 template<typename T = float>
 class mVec3 {
@@ -67,7 +61,7 @@ public:
 	}
 
 	mVec3(mVec3 A, mVec3 B);
-	mVec3(float a, float b, float c);
+	mVec3(T  a, T  b, T  c);
 	STRONG_INLINE mVec3(mVec3&& other)noexcept :x(other.x), y(other.y),z(other.z) {
 	}
 	STRONG_INLINE mVec3(const mVec3& other) noexcept : x(other.x), y(other.y), z(other.z)  {
@@ -181,7 +175,7 @@ public:
 };
 
 
-
+using mVec3i = mVec3<int>;
 using mVec3f = mVec3<float>;
 using mVec4f = mVec4<float>;
 

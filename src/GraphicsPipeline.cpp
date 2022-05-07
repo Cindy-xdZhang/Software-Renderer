@@ -4,6 +4,8 @@
 #include "assert.h"
 #include "GraphicsPipeline.h"
 #include "timer.hpp"
+#include <numeric>
+
 
 #define LI 200
 using namespace cimg_library;
@@ -25,6 +27,46 @@ static mVec3f InitGazeDirection = mVec3f(0, 0, -1);
 static mVec3f InitTopDirection = mVec3f(0, 1, 0);
 mVec3f InitLightPos = mVec3f(0, 10, 0);
  float texture_scaling = 100;
+
+
+
+
+
+
+
+
+void RenderableObject::BuildLikGLBegin(const std::vector<mVec3f>&vtxs,const std::vector<mVec3f>&normals, enum MeshBuildConvention Conv) {
+	 assert(Conv == MeshBuildConvention::LIKE_GL_TRIANGLE);
+	 Vertexes.clear();
+	 Vertexes.resize(vtxs.size());
+	 VertexesNormal.clear();
+	 VertexesNormal.resize(vtxs.size());
+	 std::copy(vtxs.begin(), vtxs.end(), Vertexes.begin());
+	 std::copy(normals.begin(), normals.end(), VertexesNormal.begin());
+
+	  TrianglesIdx.clear();
+	  int nTriangles = vtxs.size() / 3;
+	  TrianglesIdx.reserve(nTriangles);
+	 for (int i=0;i< nTriangles; i+=3)
+	 {
+		 TrianglesIdx.emplace_back( i,i + 1,i + 2 );
+	 }
+	 VtxTexUV=OBjReader::AssignTextureCoordinates(vtxs);
+
+ }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 void GraphicsPipeline::LoadTexture(std::filesystem::path tex_path) {
 	LoadTexture(tex_path.string());
@@ -148,6 +190,7 @@ void GraphicsPipeline::VertexesProcess(const RenderableObject& yu) {
 	   //-------------------------------
 		mVec4f ScreenSpaceHomoCoordinates = (PersViewPort * EyeSpaceHomoCoordinates);
 		ScreenSpaceHomoCoordinates = ScreenSpaceHomoCoordinates / ScreenSpaceHomoCoordinates.w;
+
 		vertex tmp = { ScreenSpaceHomoCoordinates.tomVec3(),vertex_normal,shading, EyeSpaceHomoCoordinates.tomVec3(),yu.VtxTexUV[Vid] };
 		TargetRenderVertexes.emplace_back(tmp);
 		Vid++;
@@ -454,9 +497,6 @@ GraphicsPipeline::GraphicsPipeline(int h, int w) : window_height(h), window_widt
 
 };
 
-
-
-#ifdef CLIP
 typedef struct vertex4 {
 	mVec4 Coordinate;
 
@@ -550,15 +590,9 @@ void clip_with_plane(Plane c_plane, std::vector<Vertex4TriangleWithAttributes> i
 
 
 
-
-
-
-
 	}
 
 
 	return;
 }
 
-
-#endif

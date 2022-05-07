@@ -111,7 +111,7 @@ void OBjReader::Load_CalculateNormal_Store(std::string inputFilepath, std::strin
 	VertexNormal.reserve(Vertexes.size());
 	for (auto VtMAP : Kmaps) {
 		int id = VtMAP.vertexid;
-		mVec3 avgnormal = { 0,0,0 };
+		mVec3f avgnormal = { 0,0,0 };
 		for (auto tri : VtMAP.belongTriangles) {
 			avgnormal += TargetRenderTrianglesNormal[tri];
 		}
@@ -139,33 +139,10 @@ void OBjReader::Load_CalculateNormal_Store(std::string inputFilepath, std::strin
 void OBjReader::Load_CalculateTextureCoordinate_Store(std::string inputFilepath, std::string outputFilepath) {
 	//load in
 	readObjFile(inputFilepath);
-	Matrix4  ModleMatrix = translateMatrix(mVec3f(-125, -125, -125));
-	float co = float(1.0f / 125.0f);
-	Matrix4 sm = scaleMatrix(co);
-	std::vector<mVec2<float>>STs;
-	STs.reserve(Vertexes.size());
-	//r2=x2+y2+zw
-	//thta=arctan(  squrt(x2+y2)/z)
-	//fi = arctan(y /x)
-	for (auto vertex : Vertexes) {
-		auto HomoLocal=   ModleMatrix*mVec4f(vertex, 1);
-		HomoLocal = sm * HomoLocal;
-
-		float  fi= atan(HomoLocal.y/ HomoLocal.x); 
-
-		float  thta = atan(sqrt(HomoLocal.x*HomoLocal.x+ HomoLocal.y* HomoLocal.y )/ HomoLocal.z  );
-		
-	
-		if (fi<0)fi+= 2 * PI;
-		if (thta < 0)thta += 2 * PI;
-		fi /= 2 * PI;
-		thta /= 2 * PI;
-		STs.emplace_back(mVec2<float>{fi ,thta });
-
-	}
 	CopyFileFunc(inputFilepath, outputFilepath);
+	auto STs=AssignTextureCoordinates(Vertexes);
 
-	std::fstream f(outputFilepath, std::ios::app);//创建一个fstream文件流对象
+	std::fstream f(outputFilepath, std::ios::app);
 	if (f.fail()) {
 		std::cout << "Fail to open file." << std::endl;
 	}
@@ -176,4 +153,35 @@ void OBjReader::Load_CalculateTextureCoordinate_Store(std::string inputFilepath,
 		f << line;
 	}
 	f.close();
+}
+
+
+ std::vector<mVec2<float>> OBjReader::AssignTextureCoordinates(const std::vector<mVec3f>& vtxs) {
+	std::vector<mVec2<float>>STs;
+	STs.reserve(vtxs.size());
+
+	float co = float(1.0f / 125.0f);
+	Matrix4 sm = scaleMatrix(co);
+
+	//r2=x2+y2+zw
+	//thta=arctan(  squrt(x2+y2)/z)
+	//fi = arctan(y /x)
+	for (auto vertex : vtxs) {
+		auto HomoLocal =  mVec4f(vertex, 1);
+		HomoLocal = sm * HomoLocal;
+
+		float  fi = atan(HomoLocal.y / HomoLocal.x);
+
+		float  thta = atan(sqrt(HomoLocal.x * HomoLocal.x + HomoLocal.y * HomoLocal.y) / HomoLocal.z);
+
+
+		if (fi < 0)fi += 2 * PI;
+		if (thta < 0)thta += 2 * PI;
+		fi /= 2 * PI;
+		thta /= 2 * PI;
+		STs.emplace_back(mVec2<float>{fi, thta });
+
+	}
+
+	return STs;
 }

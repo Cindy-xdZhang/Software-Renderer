@@ -323,6 +323,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClCompile Include="C:\Users\zhanx0o\Documents\sources\Software-Renderer\src\platforms\win32.cpp" />
     <ClCompile Include="C:\Users\zhanx0o\Documents\sources\Software-Renderer\src\viewer.cpp" />
     <ClCompile Include="src\Camera.cpp" />
+    <ClCompile Include="src\isocontour.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="C:\Users\zhanx0o\Documents\sources\Software-Renderer\ZERO_CHECK.vcxproj">

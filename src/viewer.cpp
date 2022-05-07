@@ -189,6 +189,38 @@ void Viewer::init_callbacks( ) {
 }
 
 
+void Viewer::init_demo_scene() {
+	//init_land by marching cube
+	MarchingCubesDrawer tmp;
+	tmp.randomGenrateLandmass({ 32,32,5}, 0.1);
+
+	RenderableObject land;
+	land.BuildLikGLBegin(*tmp.getVertices(), *tmp.getNormals(), MeshBuildConvention::LIKE_GL_TRIANGLE);
+	land.ModleMatrix = scaleMatrix(30.0f) * rotateMatrix({1,0,0}, 90);
+	land.updateMaterial({ mVec3f(1.39,1.17,0) * 0.02, mVec3f(1.39,1.17,0) * 60, mVec3f(1.39,1.17,0) * 2,8 });
+
+
+
+	fs::path  Path_obj = m_projectRootDir / "assets" / AssetsNames[1];
+	fs::path  Path_texture = m_projectRootDir / "assets" / AssetsNames[2];
+
+	m_objreader->readObjFile(Path_obj.string());
+	auto obj = RenderableObject(m_objreader->TrianglesIdx, m_objreader->Vertexes, m_objreader->VertexesNormal, m_objreader->VertexesTexture);
+	/*m_objects->push_back(obj);
+	obj.ModleMatrix *= translateMatrix(mVec3f(50, -0, -0));*/
+
+	m_objects->push_back(std::move(obj));
+
+	m_g_pip->LoadTexture(Path_texture);
+
+	m_objects->push_back(std::move(land));
+}
+
+
+
+
+
+
 
 void Viewer::launch_init(const char* title, int width /*= 0*/, int height /*= 0*/, bool resizable /*= true*/ , bool fullscreen /*= false*/ )
 {
@@ -199,26 +231,14 @@ void Viewer::launch_init(const char* title, int width /*= 0*/, int height /*= 0*
     {
 		m_framebuffer->resize_buffer(width, height);
 		platform_initialize();
+		windowHandle = window_create(title, width, height);
+        init_callbacks();
 		if (initAssetsPath() != EXIT_SUCCESS) {
 			throw("Fail: can't find assets folder!");
 		}
+
 		m_g_pip = std::make_unique<GraphicsPipeline>(height, width);
-		windowHandle = window_create(title, width, height);
-        init_callbacks();
-
-
-		fs::path  Path_obj = m_projectRootDir / "assets" / AssetsNames[1];
-		fs::path  Path_texture = m_projectRootDir / "assets" / AssetsNames[2];
-
-		m_objreader->readObjFile(Path_obj.string());
-		auto obj = RenderableObject(m_objreader->TrianglesIdx, m_objreader->Vertexes, m_objreader->VertexesNormal, m_objreader->VertexesTexture);
-		/*m_objects->push_back(obj);
-		obj.ModleMatrix *= translateMatrix(mVec3f(50, -0, -0));*/
-
-		m_objects->push_back(std::move(obj));
-		
-		m_g_pip->LoadTexture(Path_texture);
-
+		init_demo_scene();
     }
     catch (std::string errorInfo)
     {

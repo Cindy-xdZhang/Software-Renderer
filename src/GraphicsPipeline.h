@@ -2,9 +2,16 @@
 #include "la.h"
 #include "Camera.h"
 #include "CImg.h"
+#include "objparser.h"
 #include <filesystem>
 #include "platforms/framebuffer.h"
 #include <mutex>
+#include "isocontour.h"
+
+enum MeshBuildConvention {
+	LIKE_GL_TRIANGLE,
+	LIKE_GL_TRIANGLE_STRIP
+};
 
 struct Texture {
 	mVec3f* TextureArr;
@@ -86,27 +93,34 @@ public:
 class RenderableObject {
 private:
 	ShadingMaterial shma;	// material
-
 public:
+	
 	std::vector<mVec3i> TrianglesIdx;
 	std::vector<mVec3f> Vertexes;
 	std::vector<mVec3f> VertexesNormal;
 	std::vector<mVec2<float>>VtxTexUV;
 	Matrix4 ModleMatrix ;
 	Matrix4 NormalMatrix ;
+	inline void updateMaterial(const ShadingMaterial& newmat) {
+		this->shma = newmat;
+	}
 	inline void updateMaterial(mVec3f a, mVec3f d, mVec3f s,float f) {
 		this->shma = ShadingMaterial({ a, d, s,f });
 	}
 	inline ShadingMaterial Material() const{
 		return this->shma;
 	}
-	RenderableObject() = default;
+	RenderableObject() {
+		ModleMatrix = eye(1);
+		this->shma = { mVec3f(1,1,1) * 0.002, mVec3f(1, 1, 1) * 600, mVec3f(1, 1, 1) * 20,8 };//  0.0005      8
+	};
+
 	inline RenderableObject(std::vector<mVec3i> TrianglesIdx, std::vector<mVec3f>Vertexes, std::vector<mVec3f>VertexesNormal, std::vector<mVec2<float>>VertexesT) {
 		this->TrianglesIdx = TrianglesIdx;
 		this->Vertexes =Vertexes;
 		this->VertexesNormal = VertexesNormal;
 		this->VtxTexUV = VertexesT;
-		ModleMatrix = translateMatrix(mVec3f(0, -12, -10)) ;
+		ModleMatrix = eye(1);
 		this->shma = { mVec3f(1,1,1) * 0.002, mVec3f(1, 1, 1)* 600, mVec3f(1, 1, 1)*20,8};//  0.0005      8
 	}
 
@@ -115,8 +129,8 @@ public:
 		auto rotate = rotateMatrix(axis,degree);
 		this->ModleMatrix = this->ModleMatrix * rotate;
 	}
-
-
+	
+	void BuildLikGLBegin(const std::vector<mVec3f>& vtxs, const std::vector<mVec3f>& normals, enum MeshBuildConvention Conv);
 };
 
 
@@ -130,7 +144,7 @@ public:
 	Camera  _Camera;
 	int window_height, window_width;
 	
-	int TextureMode=2;
+	int TextureMode=0;
 
 	GraphicsPipeline() = default;
 	GraphicsPipeline(int w, int h);

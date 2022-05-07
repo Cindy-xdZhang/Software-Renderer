@@ -11,7 +11,7 @@ mVec3<T>::mVec3(mVec3<T> A, mVec3<T> B) :x(A.x - B.x), y(A.y - B.y), z(A.z - B.z
 }
 
 template<typename T>
-mVec3<T>::mVec3(float a, float b, float c):x(a),y(b),z(c) {
+mVec3<T>::mVec3(T a, T b, T c):x(a),y(b),z(c) {
 }
 
 template<typename T>
@@ -216,6 +216,6 @@ mVec3f Triangle::Normal() {
  Plane::Plane(mVec3f pm, mVec3f n) :px(pm), n(n) {
 }
 
-
+ template mVec3<int>;
  template mVec3<float>;
  template mVec4<float>;
