@@ -95,4 +95,11 @@ void framebuffer::framebuffer_clear_depth( float depth) {
     }
 }
 
+void framebuffer::framebuffer_fast_clear()
+{
+	size_t SizeBuff= static_cast<size_t>(this->width) * static_cast<size_t>(this->height);
+	SizeBuff *= sizeof(float);
+	memset(this->color_buffer, 0, SizeBuff);
+	
+}
 

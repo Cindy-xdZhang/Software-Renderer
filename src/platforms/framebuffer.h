@@ -28,7 +28,7 @@
 		dst_pixel[2] = color_rgba[2];  /* blue */
 		dst_pixel[3] = color_rgba[3];  /* blue */
 	}
-
+	void framebuffer_fast_clear();
 } ;
 
 

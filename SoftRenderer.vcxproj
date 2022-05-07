@@ -316,11 +316,10 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClCompile Include="C:\Users\zhanx0o\Documents\sources\Software-Renderer\src\la.cpp" />
     <ClCompile Include="C:\Users\zhanx0o\Documents\sources\Software-Renderer\src\main.cpp" />
     <ClCompile Include="C:\Users\zhanx0o\Documents\sources\Software-Renderer\src\matrix.cpp" />
-    <ClCompile Include="C:\Users\zhanx0o\Documents\sources\Software-Renderer\src\obj.cpp" />
+    <ClCompile Include="src\GraphicsPipeline.cpp" />
     <ClCompile Include="C:\Users\zhanx0o\Documents\sources\Software-Renderer\src\objparser.cpp" />
     <ClCompile Include="C:\Users\zhanx0o\Documents\sources\Software-Renderer\src\platforms\framebuffer.cpp" />
     <ClCompile Include="C:\Users\zhanx0o\Documents\sources\Software-Renderer\src\platforms\image.c" />
-    <ClCompile Include="C:\Users\zhanx0o\Documents\sources\Software-Renderer\src\platforms\linux.c" />
     <ClCompile Include="C:\Users\zhanx0o\Documents\sources\Software-Renderer\src\platforms\win32.cpp" />
     <ClCompile Include="C:\Users\zhanx0o\Documents\sources\Software-Renderer\src\viewer.cpp" />
     <ClCompile Include="src\Camera.cpp" />

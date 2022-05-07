@@ -1,4 +1,5 @@
 #include "Camera.h"
+#include <assert.h>
 #include "timer.hpp"
 #include <thread>
 using namespace std;
@@ -42,7 +43,6 @@ void Camera::SetFrustm(float r, float l, float b, float t, float dfov, float far
 	if (this->fov < 12.50f)	this->fov = 12.50f;
 	
 }
-//竖直
 void Camera::UpdatePitchAngle(float dpitch) {
 	pitch += dpitch;
 	if (pitch > 89.0f)pitch = 89.0f;
@@ -55,13 +55,11 @@ void Camera::UpdatePitchAngle(float dpitch) {
 	this->front =normalize(direction) ;
 	
 
-	//计算相机上方向
 	up = right.cross_product(front);
 	up.normalize();
 	//right = front.cross_product(up);
 	//right.normalize();
 }
-//水平
 void Camera::UpdateYawAngle( float dyaw) {
 	yaw += dyaw;
 
@@ -70,13 +68,11 @@ void Camera::UpdateYawAngle( float dyaw) {
 	direction.x = sin(Radians(pitch));
 	direction.z = -sin(Radians(yaw))*cos(Radians(pitch));
 	this->front = direction;
-	//计算相机right方向
 	right = front.cross_product(up);
 	right.normalize();
 	
 }
 
-//p的x y z分别带表 相机上下 左右 前后
 void Camera::UpdatePos(mVec3f p) {
 	position += (up*p.y+ right * p.x + front * p.z);
 }
@@ -95,6 +91,7 @@ Matrix4 Camera::genPerspectiveMat() {
 
 
 mVec3f ArcBallControler::GetArcBallPositionVector(int x, int y) const{
+	assert(w > 0 && h > 0);
 	float rx = (float(2 * x) / float(w)) - 1;
 	float ry = (float(2 * y) / float(h)) - 1;
 	float square = rx * rx + ry * ry;
@@ -120,6 +117,7 @@ Matrix4 ArcBallControler::GetArcBallrotateMatrix(mVec3f a, mVec3f b) const {
 	cosTheta = cosTheta > 1 ? 1: cosTheta;
 	cosTheta = cosTheta < -1 ? -1 : cosTheta;
 	float Theta = -acos(cosTheta);//in radians form
+	Theta *= sensitivity;
 	//Theta = 180 * Theta / PI;
 	mVec3f axis = a.cross_product(b);
 	axis.normalize();

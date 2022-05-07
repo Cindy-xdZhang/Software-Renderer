@@ -4,6 +4,7 @@
 #include "CImg.h"
 #include <filesystem>
 #include "platforms/framebuffer.h"
+#include <mutex>
 
 struct Texture {
 	mVec3f* TextureArr;
@@ -129,8 +130,8 @@ public:
 	mVec3f InitLightPos = mVec3f(0, 20, 0);
 	Camera  _Camera;
 	int window_height, window_width;
-	//std::mutex buffer_mutex;
-	int TextureMode=0;
+	
+	int TextureMode=2;
 
 	GraphicsPipeline() = default;
 	GraphicsPipeline(int h, int w);
@@ -138,7 +139,7 @@ public:
 
 	void LoadTexture(std::string path);
 	void LoadTexture(std::filesystem::path tex_path);
-	STRONG_INLINE  mVec3f LookupTexel(mVec2<float> st, const int textureChannel ) {
+	STRONG_INLINE  mVec3f LookupTexel(mVec2<float> st, const int textureChannel) const  {
 			auto linear = [](float alpha, mVec3f a, mVec3f b) {
 				return a * alpha + b * (1 - alpha);
 			};

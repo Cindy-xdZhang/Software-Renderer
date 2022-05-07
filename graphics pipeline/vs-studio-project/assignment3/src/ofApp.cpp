@@ -53,25 +53,25 @@ void ofApp::draw() {
 void ofApp::keyPressed(int key) {
 
 	if (key == 'd') {
-		GP._Camera.UpdatePos(mVec3(5,0,0));
+		m_g_pip->_Camera.UpdatePos(mVec3(5,0,0));
 	}	
 	if (key == 'a') {
-		GP._Camera.UpdatePos(mVec3(-5, 0, 0));
+		m_g_pip->_Camera.UpdatePos(mVec3(-5, 0, 0));
 	}
 	if (key == 's') {
-		GP._Camera.UpdatePos(mVec3(0, -5, 0));
+		m_g_pip->_Camera.UpdatePos(mVec3(0, -5, 0));
 	}
 	if (key == 'w') {
-		GP._Camera.UpdatePos(mVec3(0, 5, 0));
+		m_g_pip->_Camera.UpdatePos(mVec3(0, 5, 0));
 	}
 	if (key == 'q') {
 		GP.InitLightPos.z -=5;
 	}
 	if (key == 'e') {//go outside 
-		GP._Camera.UpdatePos(mVec3(0, 0, -5));
+		m_g_pip->_Camera.UpdatePos(mVec3(0, 0, -5));
 	}
 	if (key == 'r') {//go into 
-		GP._Camera.UpdatePos(mVec3(0, 0, 5));
+		m_g_pip->_Camera.UpdatePos(mVec3(0, 0, 5));
 	}
 	if (key == 'b') {//go into 
 		GP.UsePhongShading = !GP.UsePhongShading;
@@ -216,7 +216,7 @@ void ofApp::mouseDragged(int x, int y, int button) {
 }
 void ofApp::mouseScrolled(int x, int y, float scrollX, float scrollY) {
 	cout << "MouseScrolled: x=" << y << " y=" << x << " scrollX=" << scrollX << " scrollY=" << scrollY << endl;//Êó±êµÄx,y×ø±ê
-	GP._Camera.UpdateFov(-scrollY);
+	m_g_pip->_Camera.UpdateFov(-scrollY);
 
 }
 //--------------------------------------------------------------

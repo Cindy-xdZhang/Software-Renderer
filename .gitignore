@@ -6,3 +6,4 @@ CMakeFiles/*
 .vs/*
 Release/*
 SoftRenderer.dir/*
+*.png

@@ -1,33 +1,14 @@
 #include "objparser.h"
+#include <xutility>
 
-std::vector<mVec3i>& OBjReader::read(std::string Filepath,int numberOfTriangles) {
-	readVertexs(Filepath);
-	if (numberOfTriangles == -1) {
-		return TrianglesIdx;
-	}
-	else {
-		TrianglesIdx.resize(numberOfTriangles);
-		return TrianglesIdx;
-	}
-}
-std::vector<mVec3i>& OBjReader::read(std::filesystem::path Filepath, int numberOfTriangles) {
-	readVertexs(Filepath);
-	if (numberOfTriangles == -1) {
-		return TrianglesIdx;
-	}
-	else {
-		TrianglesIdx.resize(numberOfTriangles);
-		return TrianglesIdx;
-	}
-}
 
-template<typename FilePathType>
-void OBjReader::readVertexs(const FilePathType& Filepath) {
+
+void OBjReader::readObjFile(const std::string& Filepath) {
 	std::fstream f(Filepath);
 	std::string  line; 
 	Vertexes.reserve(32332);
-	VertexesNormal.reserve(32332);
 	TrianglesIdx.reserve(67580);
+	VertexesNormal.reserve(32332);
 	while (getline(f, line))
 	{
 		if (line.size() > 0) {
@@ -43,7 +24,7 @@ void OBjReader::readVertexs(const FilePathType& Filepath) {
 				else if(beging2 == 't'){
 					const char* Cstr = line.c_str();
 					float Vx = 0, Vy = 0;
-					std::ignore=sscanf(Cstr, "vt %f %f ", &Vx, &Vy);
+					std::ignore=sscanf(Cstr, "vt %f %f", &Vx, &Vy);
 					VertexesTexture.emplace_back(mVec2<float>{Vx, Vy});
 				}
 				else {
@@ -55,9 +36,17 @@ void OBjReader::readVertexs(const FilePathType& Filepath) {
 				}
 			}
 			if (beging == 'f') {
+				int count_slash = std::count(line.begin(), line.end(), '/');;
 				const char* Cstr = line.c_str();
 				int Vx = 0, Vy = 0, Vz = 0;
-				std::ignore = sscanf(Cstr, "f %d %d %d", &Vx, &Vy, &Vz);
+				if (count_slash==6)
+				{
+					int not_used=0;
+					std::ignore = sscanf(Cstr, "f %d/%d/%d %d/%d/%d %d/%d/%d", &Vx, &not_used, &not_used, &Vy, &not_used, &not_used, &Vz, &not_used, &not_used);
+				}
+				else {
+					std::ignore = sscanf(Cstr, "f %d %d %d", &Vx, &Vy, &Vz);
+				}
 				mVec3i tmp = { Vx - 1, Vy - 1, Vz - 1 };
 				TrianglesIdx.emplace_back(tmp);
 			}
@@ -99,7 +88,7 @@ int CopyFileFunc(std:: string path1, std::string path2) {
 //LoadObjFiles_withoutNormal_storeObjFileswith_normal
 void OBjReader::Load_CalculateNormal_Store(std::string inputFilepath, std::string outputFilepath){
 	//load in
-	read(inputFilepath);
+	readObjFile(inputFilepath);
 	//build key-value map:   key: vertexId, value: trianglesIds(1,2,3,4,..etc)
 	std::vector<vertex2triangleMap>Kmaps;
 	Kmaps.resize(Vertexes.size());
@@ -149,7 +138,7 @@ void OBjReader::Load_CalculateNormal_Store(std::string inputFilepath, std::strin
 
 void OBjReader::Load_CalculateTextureCoordinate_Store(std::string inputFilepath, std::string outputFilepath) {
 	//load in
-	read(inputFilepath);
+	readObjFile(inputFilepath);
 	Matrix4  ModleMatrix = translateMatrix(mVec3f(-125, -125, -125));
 	float co = float(1.0f / 125.0f);
 	Matrix4 sm = scaleMatrix(co);

@@ -24,7 +24,7 @@ struct mVec2{
 	mVec2<T>(mVec2<T> && other) noexcept:x(std::move(other.x)), y(std::move(other.y))  {
 	}
 
-	mVec2<T>& operator=(mVec2<T> && rhs)  {
+	mVec2<T>& operator=(mVec2<T> && rhs) noexcept {
 		this->x = rhs.x;
 		this->y = rhs.y;
 		return *this;
@@ -193,8 +193,8 @@ public:
 	}
 	Triangle() = default;
 
-	//[[msvc::forceinline_calls ]] 
-	STRONG_INLINE mVec2<float> Triangle::PointIsInTriangle(const mVec3f& p) const {
+	STRONG_INLINE
+	mVec2<float> Triangle::PointIsInTriangle(const mVec3f& p) const {
 		//P = A + u * (C - A) + v * (B - A)       // Original equation
 		//	(P - A) = u * (C - A) + v * (B - A)     // Subtract A from both sides
 		//	v2 = u * v0 + v * v1                    // Substitute v0, v1, v2 for less writing

@@ -3,25 +3,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <direct.h>
-#include <windows.h>
 #include "platform.h"
 
+
 extern "C" {
-#include "image.h"
-    struct window {
-        HWND handle;
-        HDC memory_dc;
-        image_t* surface;
-        /* common data */
-        int should_close;
-        char keys[KEY_NUM];
-        char buttons[BUTTON_NUM];
-        callbacks_t callbacks;
-        void* userdata;
-    };
 
-
-
+ static void resizeMemoryDCBuffer(window_t* window, HWND hWnd, int width, int height);
 
 
 /* platform initialization */
@@ -93,24 +80,15 @@ const char* private_get_extension(const char* filename) {
      */
     static void handle_key_message(window_t* window, WPARAM virtual_key,
         char pressed) {
-        keycode_t key;
-        switch (virtual_key) {
-        case 'A':      key = KEY_A;     break;
-        case 'D':      key = KEY_D;     break;
-        case 'S':      key = KEY_S;     break;
-        case 'W':      key = KEY_W;     break;
-        case VK_SPACE: key = KEY_SPACE; break;
-        default:       key = KEY_NUM;   break;
-        }
-        if (key < KEY_NUM) {
-            window->keys[key] = pressed;
-            if (window->callbacks.key_callback) {
-                window->callbacks.key_callback(window, key, pressed);
-            }
-        }
+		if (window->callbacks.key_callback) {
+			window->callbacks.key_callback(window, virtual_key, pressed);
+		}
+
     }
 
-    static void handle_button_message(window_t* window, button_t button,
+
+
+    static void handle_mouse_message(window_t* window, button_t button,
         char pressed) {
         window->buttons[button] = pressed;
         if (window->callbacks.button_callback) {
@@ -124,49 +102,84 @@ const char* private_get_extension(const char* filename) {
         }
     }
 
-    static LRESULT CALLBACK process_message(HWND hWnd, UINT uMsg,
-        WPARAM wParam, LPARAM lParam) {
-        window_t* window = (window_t*)GetProp(hWnd, WINDOW_ENTRY_NAME);
-        if (window == NULL) {
-            return DefWindowProc(hWnd, uMsg, wParam, lParam);
-        }
-        else if (uMsg == WM_CLOSE) {
-            window->should_close = 1;
+	static void handle_resizing_message(window_t* window, const RECT& newrec) {
+		if (window->callbacks.window_resize_callback) {
+			window->callbacks.window_resize_callback(window, newrec);
+		}
+	}
+	static bool first_create_window = false;
+	static LRESULT CALLBACK process_message(HWND hWnd, UINT uMsg,
+		WPARAM wParam, LPARAM lParam) {
+
+
+		window_t* window = (window_t*)GetProp(hWnd, WINDOW_ENTRY_NAME);
+		if (window == NULL) {
+			return DefWindowProc(hWnd, uMsg, wParam, lParam);
+		}
+		else if (uMsg == WM_MDIMAXIMIZE) {
+			window->should_close = 0;
+			return 0;
+		}
+		else if (uMsg == WM_CLOSE) {
+			window->should_close = 1;
+			return 0;
+		}
+		else if (uMsg == WM_KEYDOWN) {
+			handle_key_message(window, wParam, 1);
+			return 0;
+		}
+		else if (uMsg == WM_KEYUP) {
+			handle_key_message(window, wParam, 0);
+			return 0;
+		}
+		else if (uMsg == WM_MOUSEMOVE) {
+			handle_mouse_message(window, BUTTON_L, 3);
+			return 0;
+		}
+		else if (uMsg == WM_LBUTTONDOWN) {
+			handle_mouse_message(window, BUTTON_L, 1);
+			return 0;
+		}
+		else if (uMsg == WM_RBUTTONDOWN) {
+			handle_mouse_message(window, BUTTON_R, 1);
+			return 0;
+		}
+		else if (uMsg == WM_LBUTTONUP) {
+			handle_mouse_message(window, BUTTON_L, 0);
+			return 0;
+		}
+		else if (uMsg == WM_RBUTTONUP) {
+			handle_mouse_message(window, BUTTON_R, 0);
+			return 0;
+		}
+		else if (uMsg == WM_MOUSEWHEEL) {
+			float offset = GET_WHEEL_DELTA_WPARAM(wParam) / (float)WHEEL_DELTA;
+			handle_scroll_message(window, offset);
+			return 0;
+		}
+		else if (uMsg == WM_SIZING) {
+			float offset = GET_WHEEL_DELTA_WPARAM(wParam) / (float)WHEEL_DELTA;
+			handle_scroll_message(window, offset);
+			return 0;
+		}
+
+		else if (uMsg == WM_SIZE) {//deal with size changing 
+			if (first_create_window)
+			{
+				RECT   rect;
+				GetClientRect(hWnd, &rect);
+				LONG height = rect.bottom - rect.top + 1;
+				LONG width = rect.right - rect.left + 1;
+                resizeMemoryDCBuffer(window,hWnd,width,height);
+				handle_resizing_message(window, rect);
+			}
+			first_create_window = true;
             return 0;
-        }
-        else if (uMsg == WM_KEYDOWN) {
-            handle_key_message(window, wParam, 1);
-            return 0;
-        }
-        else if (uMsg == WM_KEYUP) {
-            handle_key_message(window, wParam, 0);
-            return 0;
-        }
-        else if (uMsg == WM_LBUTTONDOWN) {
-            handle_button_message(window, BUTTON_L, 1);
-            return 0;
-        }
-        else if (uMsg == WM_RBUTTONDOWN) {
-            handle_button_message(window, BUTTON_R, 1);
-            return 0;
-        }
-        else if (uMsg == WM_LBUTTONUP) {
-            handle_button_message(window, BUTTON_L, 0);
-            return 0;
-        }
-        else if (uMsg == WM_RBUTTONUP) {
-            handle_button_message(window, BUTTON_R, 0);
-            return 0;
-        }
-        else if (uMsg == WM_MOUSEWHEEL) {
-            float offset = GET_WHEEL_DELTA_WPARAM(wParam) / (float)WHEEL_DELTA;
-            handle_scroll_message(window, offset);
-            return 0;
-        }
-        else {
-            return DefWindowProc(hWnd, uMsg, wParam, lParam);
-        }
-    }
+		}
+		else {
+			return DefWindowProc(hWnd, uMsg, wParam, lParam);
+		}
+	}
 
 
     //regster WNDCLASS  class  for windows os.
@@ -224,7 +237,8 @@ const char* private_get_extension(const char* filename) {
     /* window related functions */
 
     static HWND create_window(const char* title_, int width, int height) {
-        DWORD style = WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX;
+        //DWORD style = WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX; this style not allowed resize window
+        DWORD style = WS_OVERLAPPEDWINDOW;
         RECT rect;
         HWND handle;
 
@@ -263,10 +277,8 @@ const char* private_get_extension(const char* filename) {
         HDC memory_dc;
         image_t* surface;
 
-        surface = image_create(width, height, 4, FORMAT_LDR);
-        free(surface->ldr_buffer);
-        surface->ldr_buffer = NULL;
-
+        surface = image_create(width, height, 4, NODATA_LDR_FORAMAT);
+ 
         window_dc = GetDC(handle);
         memory_dc = CreateCompatibleDC(window_dc);
         ReleaseDC(handle, window_dc);
@@ -310,6 +322,44 @@ const char* private_get_extension(const char* filename) {
         ShowWindow(handle, SW_SHOW);
         return window;
     }
+
+    static void resizeMemoryDCBuffer(window_t* window,HWND hWnd, int width, int height) {
+		
+		window->surface->ldr_buffer = NULL;
+		image_release(window->surface);
+
+
+		BITMAPINFOHEADER bi_header;
+		HBITMAP dib_bitmap;
+		HBITMAP old_bitmap;
+		HDC window_dc;
+		HDC memory_dc;
+		image_t* surface;
+		surface = image_create(width, height, 4, NODATA_LDR_FORAMAT);
+
+		//window_dc = GetDC(hWnd);
+		memory_dc = window->memory_dc;
+        //ReleaseDC(hWnd, window_dc);
+
+		memset(&bi_header, 0, sizeof(BITMAPINFOHEADER));
+		bi_header.biSize = sizeof(BITMAPINFOHEADER);
+		bi_header.biWidth = width;
+		bi_header.biHeight = -height;  /* top-down */
+		bi_header.biPlanes = 1;
+		bi_header.biBitCount = 32;
+		bi_header.biCompression = BI_RGB;
+		dib_bitmap = CreateDIBSection(memory_dc, (BITMAPINFO*)&bi_header,
+			DIB_RGB_COLORS, (void**)&surface->ldr_buffer,
+			NULL, 0);
+		assert(dib_bitmap != NULL);
+		old_bitmap = (HBITMAP)SelectObject(memory_dc, dib_bitmap);
+		DeleteObject(old_bitmap);
+
+		window->surface = surface;
+
+
+    }
+   
 
     void window_destroy(window_t* window) {
         ShowWindow(window->handle, SW_HIDE);
@@ -406,4 +456,5 @@ const char* private_get_extension(const char* filename) {
 
 
 }
+
 

@@ -10,7 +10,7 @@
     <ClCompile Include="C:\Users\zhanx0o\Documents\sources\Software-Renderer\src\matrix.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\zhanx0o\Documents\sources\Software-Renderer\src\obj.cpp">
+    <ClCompile Include="src\GraphicsPipeline.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="C:\Users\zhanx0o\Documents\sources\Software-Renderer\src\objparser.cpp">
@@ -20,9 +20,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="C:\Users\zhanx0o\Documents\sources\Software-Renderer\src\platforms\image.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="C:\Users\zhanx0o\Documents\sources\Software-Renderer\src\platforms\linux.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="C:\Users\zhanx0o\Documents\sources\Software-Renderer\src\platforms\win32.cpp">

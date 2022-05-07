@@ -3,7 +3,9 @@
 
 typedef enum {
     FORMAT_LDR,
-    FORMAT_HDR
+    FORMAT_HDR,
+    NODATA_LDR_FORAMAT,
+    NODATA_HDR_FORAMAT
 } format_t;
 
 typedef struct {
@@ -15,7 +17,8 @@ typedef struct {
 
 /* image creating/releasing */
 image_t *image_create(int width, int height, int channels, format_t format);
-void image_release(image_t *image);
+void image_resize(image_t* image, int width, int height);
+void image_release(image_t* image);
 image_t *image_load(const char *filename);
 void image_save(image_t *image, const char *filename);
 

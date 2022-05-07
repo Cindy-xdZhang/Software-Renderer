@@ -43,8 +43,17 @@ public:
 	//~Camera();
 };
 class ArcBallControler {
+private:
 	int w,h;
+	float sensitivity=0.8;
 public:
+	inline void updateWH(int ww, int hh) {
+		w = ww;
+		h = hh;
+	}
+	inline void updateSensitivity(float qw) {
+		sensitivity = qw;
+	}
 	ArcBallControler() = default;
 	ArcBallControler(int w, int h): w(w), h(h){
 	}

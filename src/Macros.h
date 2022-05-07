@@ -22,11 +22,15 @@
 #define MAX(a,b)    (((a)>(b)) ?  (a):(b))
 #define MIN(a,b)    (((a)>(b)) ?  (b):(a))
 
-#define DEFAULT_WINDOW_HEIGHT 960
-#define DEFAULT_WINDOW_WIDTH 640
+#define DEFAULT_WINDOW_HEIGHT 720
+#define DEFAULT_WINDOW_WIDTH  1024
 
 #if defined(_MSC_VER)
 #define STRONG_INLINE __forceinline
-#else
+#elif defined(__GNUC__)
+#define STRONG_INLINE __attribute__(always_inline)
+#elif defined(__clang__)
 #define STRONG_INLINE inline
+#else
+#error "Fail to detect compiler"
 #endif

@@ -321,7 +321,7 @@ Matrix4 translateMatrix(mVec3f translation) {
 //axis=0,1,2->x,y,z angle in degree,but cos sin function works for radiant 
 Matrix4 rotateMatrix(int axis, float angle) {
 	Matrix4 tmp;
-	float RotateAngle = angle * PI / 180.0f;
+	float RotateAngle = (angle / 180.0f)*PI;
 	if (axis == 0) {
 		auto datap = std::vector< std::vector<float>>({ {1., 0.,0.,0.} ,{0.0f,cos(RotateAngle),-sin(RotateAngle),0.} ,{ 0.,sin(RotateAngle),cos(RotateAngle),0. } ,{0., 0.,0.,1.} });
 		tmp = Matrix4(datap);
@@ -338,6 +338,31 @@ Matrix4 rotateMatrix(int axis, float angle) {
 
 	}
 	return tmp;
+}
+
+Matrix4 rotateMatrix(mVec3f n, float theta) {
+	n.normalize();
+	float SinTheta = sin(theta);
+	float CosTheta = cos(theta);
+	auto datap = std::vector< std::vector<float>>({ \
+{ n.x* n.x* (1 - CosTheta) + CosTheta,\
+  n.x* n.y* (1 - CosTheta) + n.z * SinTheta,\
+  n.x* n.z* (1 - CosTheta) - n.y * SinTheta, \
+0 } ,\
+{ n.x* n.y* (1 - CosTheta) - n.z * SinTheta, \
+  n.y* n.y* (1 - CosTheta) + CosTheta, \
+  n.y* n.z* (1 - CosTheta) + n.x * SinTheta, \
+0 }, \
+{ n.z* n.x* (1 - CosTheta) + n.y * SinTheta, \
+  n.z* n.y* (1 - CosTheta) - n.x * SinTheta, \
+  n.z* n.z* (1 - CosTheta) + CosTheta, \
+		0 }, \
+	{0, 0, 0, 1	}
+		});
+
+	return Matrix4(datap);
+
+
 }
 
 
@@ -394,31 +419,6 @@ Matrix4 ViewMatrix(mVec3f eyePos, mVec3f GazeDirection, mVec3f TopDirection) {
 	return R_view * T_view;
 }
 
-
-Matrix4 rotateMatrix(mVec3f n, float theta) {
-
-	float SinTheta = sin(theta);
-	float CosTheta = cos(theta);
-	auto datap = std::vector< std::vector<float>>({ \
-{ n.x*n.x*(1 - CosTheta) + CosTheta,\
-  n.x*n.y*(1 - CosTheta) + n.z*SinTheta,\
-  n.x*n.z*(1 - CosTheta) - n.y*SinTheta, \
-0 } ,\
-{ n.x*n.y*(1 - CosTheta) - n.z*SinTheta, \
-  n.y*n.y*(1 - CosTheta) + CosTheta, \
-  n.y*n.z*(1 - CosTheta) + n.x*SinTheta, \
-0 }, \
-{ n.z*n.x*(1 - CosTheta) + n.y*SinTheta, \
-  n.z*n.y*(1 - CosTheta) - n.x*SinTheta, \
-  n.z*n.z*(1 - CosTheta) + CosTheta, \
-		0 }, \
-	{0, 0, 0, 1	}
-});
-
-	return Matrix4(datap);
-
-
-}
 
 Matrix4 squashMatrix(float n, float f) {
 	auto datap = std::vector< std::vector<float>>({ \

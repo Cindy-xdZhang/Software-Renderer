@@ -15,7 +15,7 @@ image_t *image_create(int width, int height, int channels, format_t format) {
     image_t *image;
 
     assert(width > 0 && height > 0 && channels >= 1 && channels <= 4);
-    assert(format == FORMAT_LDR || format == FORMAT_HDR);
+    assert(format == FORMAT_LDR || format == FORMAT_HDR|| format == NODATA_HDR_FORAMAT|| format == NODATA_LDR_FORAMAT);
 
     image = (image_t*)malloc(sizeof(image_t));
     image->format = format;
@@ -29,14 +29,50 @@ image_t *image_create(int width, int height, int channels, format_t format) {
         int size = sizeof(unsigned char) * num_elems;
         image->ldr_buffer = (unsigned char*)malloc(size);
         memset(image->ldr_buffer, 0, size);
-    } else {
+    } else if(format == FORMAT_HDR) {
         int size = sizeof(float) * num_elems;
         image->hdr_buffer = (float*)malloc(size);
         memset(image->hdr_buffer, 0, size);
     }
-
+    else if(format == NODATA_LDR_FORAMAT) {
+        image->format=FORMAT_LDR;
+    }
+    else {
+        image->format = FORMAT_HDR;
+    }
+ 
     return image;
 }
+
+void image_resize(image_t* image,int width, int height) {
+    if (image->width==width&&image->height==height)
+    {
+        return ;
+    }
+
+    int channels = image->channels;
+    format_t format= image->format;
+
+	int num_elems = width * height * channels;
+
+	assert(width > 0 && height > 0 && channels >= 1 && channels <= 4);
+	assert(format == FORMAT_LDR || format == FORMAT_HDR);
+	if (format == FORMAT_LDR) {
+        free(image->ldr_buffer);
+		int size = sizeof(unsigned char) * num_elems;
+        image->ldr_buffer= (unsigned char*)malloc(size);
+		memset(image->ldr_buffer, 0, size);
+	}
+	else {
+        free(image->hdr_buffer);
+		int size = sizeof(float) * num_elems;
+        image->hdr_buffer = (float*)malloc(size);
+		memset(image->hdr_buffer, 0, size);
+	}
+
+	return ;
+}
+
 
 void image_release(image_t *image) {
     free(image->ldr_buffer);
