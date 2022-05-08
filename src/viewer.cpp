@@ -181,11 +181,11 @@ void Viewer::init_callbacks( ) {
 				{
 					float x, y;
 					input_query_cursor(windowHandle, &x, &y);
-						lastX = x;
-						lastY = y;
-						Op1 = mArcControl.GetArcBallPositionVector(lastX, lastY);
-						mouse_dragging = true;
-						LastRot = ThisRot;
+					lastX = x;
+					lastY = y;
+					Op1 = mArcControl.GetArcBallPositionVector(lastX, lastY);
+					mouse_dragging = true;
+					LastRot = ThisRot;
 				}
 			}
 			else if (pressed==3&& button == BUTTON_L) {//drag
@@ -195,12 +195,17 @@ void Viewer::init_callbacks( ) {
 						//cout << "mouseDragged: y=" << y - lastY << " x=" << x - lastX << " button=" << button << endl;
 						Op2 = mArcControl.GetArcBallPositionVector(x, y);
 						ThisRot = mArcControl.GetArcBallrotateMatrix(Op1, Op2);
+						Op1 = Op2;
 						ThisRot = ThisRot * LastRot;
-						m_objects->at(control_ob_id).setModelMatrix(ThisRot);
+						auto preModelMat = m_objects->at(control_ob_id).getModelMatrix();
+						m_objects->at(control_ob_id).setModelMatrix(preModelMat* ThisRot);
+						
 					}
 			}
 			else
 			{
+				LastRot = eye(4);
+				ThisRot = eye(4);
 				mouse_dragging = false;
 			}
 			
@@ -231,7 +236,7 @@ void Viewer::init_callbacks( ) {
 void Viewer::init_demo_scene() {
 	//init_land by marching cube
 	MarchingCubesDrawer tmp;
-	tmp.randomGenrateLandmass({ 64,64,5}, 1);
+	tmp.randomGenrateLandmass({ 64,64,5}, 0.1);
 
 	RenderableObject land;
 	land.BuildLikGLBegin(*tmp.getVertices(), *tmp.getNormals(), MeshBuildConvention::LIKE_GL_TRIANGLE);
@@ -265,7 +270,7 @@ void Viewer::init_demo_scene() {
 	lightBox.setModelMatrix(translateMatrix({-8,-1,-3}) * scaleMatrix(4.0f) * rotateMatrix({ 0.45,0.45,0 }, 45));
 	//lightBox.fixit();
 	//m_objects->push_back(std::move(lightBox));
-	//m_objects->push_back(std::move(land));
+	m_objects->push_back(std::move(land));
 
 	m_g_pip->LoadTexture(Path_texture);
 	m_g_pip->LoadTexture(Path_texture_sky);
