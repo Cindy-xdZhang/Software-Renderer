@@ -11,29 +11,28 @@
 using namespace cimg_library;
 
 //#TODO: 
-// //0.0 depth buffer has problem when there are multiple objects!!!!!
-//0. use buffer remove one redundant perspective divide in vertex process 
 //1.resize windows call_back;       done
 //2.show fps on windows title?          done
 // 3. marching cube for procedural land generation.      done
-// 3.2 debug why scoll mouse change texture when use perspective divide?
-// 3.3 alpha blend
+// 3.2 debug why scroll mouse change texture when use perspective divide?
+// 3.3 alpha blend 
 //4.parse args to start ray-tracing or graphics pipeline
 // 4.1.Clip done
-// 4.2 homospace clip
+// 4.2 clip cause zigzag?
 //5.sky box
 //6.pbr ggx 
 //7.water surface
+//10. use buffer remove one redundant perspective divide in vertex process 
 
 
 mVec3f InitLightPos = mVec3f(0, 10, 0);
 float texture_scaling = 100;
 
-static mVec3f LightSourceEyeSpace ;
-static mVec3f InitEyePos = mVec3f(0, 10, 20);
+static mVec3f LightSourceEyeSpace;
+static mVec3f InitEyePos = mVec3f(-8, 2, 20);
 static mVec3f InitGazeDirection = mVec3f(0, 0, -1);
 static mVec3f InitTopDirection = mVec3f(0, 1, 0);
- //static std::map<std::string, unsigned int >bufferConvention={
+//static std::map<std::string, unsigned int >bufferConvention={
 //"position": 0,
 //"normal" : 1,
 //"textureuv" : 2,
@@ -42,53 +41,53 @@ static mVec3f InitTopDirection = mVec3f(0, 1, 0);
 //"screen space coordinate": 5,
 //};
 
- STRONG_INLINE  mVec3f ADSshading(const mVec3f &eye, const mVec3f& aLightSource, const mVec3f& point, const mVec3f& normal, const ShadingMaterial& Mp) {
-	 mVec3f Ia = Mp.Ka * LI;
-	 mVec3f  Sourse = aLightSource;
-	 //Reflection
-	 mVec3f ReflectionD = mVec3f(Sourse, point);
-	 float distance2 = pow((Sourse.x - point.x), 2) + pow((Sourse.y - point.y), 2) + pow((Sourse.z - point.z), 2);
-	 float Intensity = (LI / distance2);
-	 mVec3f light_dir(Sourse, point);
-	 mVec3f eye_dir(eye, point);
-	 light_dir.normalize();
-	 eye_dir.normalize();
-	 //normal.normalize();
-	 mVec3f h = (eye_dir + light_dir);
-	 h.normalize();
-	 float dotproduct = normal * light_dir;
-	 mVec3f Id = Mp.Kd * Intensity * (dotproduct > 0 ? dotproduct : 0);
-	 float dotproduct2 = normal * h;
-	 float tmp = dotproduct2 > 0.0f ? dotproduct2 : 0.0f;
-	 tmp = pow(tmp, Mp.f);
-	 mVec3f Is = Mp.Ks * Intensity * tmp;
-	 mVec3f  If = (Is + Id + Ia);
-	 If.ColorClamp();
-	 return If;
- };
+STRONG_INLINE  mVec3f ADSshading(const mVec3f& eye, const mVec3f& aLightSource, const mVec3f& point, const mVec3f& normal, const ShadingMaterial& Mp) {
+	mVec3f Ia = Mp.Ka * LI;
+	mVec3f  Sourse = aLightSource;
+	//Reflection
+	mVec3f ReflectionD = mVec3f(Sourse, point);
+	float distance2 = pow((Sourse.x - point.x), 2) + pow((Sourse.y - point.y), 2) + pow((Sourse.z - point.z), 2);
+	float Intensity = (LI / distance2);
+	mVec3f light_dir(Sourse, point);
+	mVec3f eye_dir(eye, point);
+	light_dir.normalize();
+	eye_dir.normalize();
+	//normal.normalize();
+	mVec3f h = (eye_dir + light_dir);
+	h.normalize();
+	float dotproduct = normal * light_dir;
+	mVec3f Id = Mp.Kd * Intensity * (dotproduct > 0 ? dotproduct : 0);
+	float dotproduct2 = normal * h;
+	float tmp = dotproduct2 > 0.0f ? dotproduct2 : 0.0f;
+	tmp = pow(tmp, Mp.f);
+	mVec3f Is = Mp.Ks * Intensity * tmp;
+	mVec3f  If = (Is + Id + Ia);
+	If.ColorClamp();
+	return If;
+};
 
 
 
 
-void RenderableObject::BuildLikGLBegin(const std::vector<mVec3f>&vtxs,const std::vector<mVec3f>&normals, enum MeshBuildConvention Conv) {
-	 assert(Conv == MeshBuildConvention::LIKE_GL_TRIANGLE);
-	 Vertices.clear();
-	 Vertices.resize(vtxs.size());
-	 VtxNormals.clear();
-	 VtxNormals.resize(vtxs.size());
-	 std::copy(vtxs.begin(), vtxs.end(), Vertices.begin());
-	 std::copy(normals.begin(), normals.end(), VtxNormals.begin());
+void RenderableObject::BuildLikGLBegin(const std::vector<mVec3f>& vtxs, const std::vector<mVec3f>& normals, enum MeshBuildConvention Conv) {
+	assert(Conv == MeshBuildConvention::LIKE_GL_TRIANGLE);
+	Vertices.clear();
+	Vertices.resize(vtxs.size());
+	VtxNormals.clear();
+	VtxNormals.resize(vtxs.size());
+	std::copy(vtxs.begin(), vtxs.end(), Vertices.begin());
+	std::copy(normals.begin(), normals.end(), VtxNormals.begin());
 
-	  TrianglesIdx.clear();
-	  int nTriangles = vtxs.size() / 3;
-	  TrianglesIdx.reserve(nTriangles);
-	 for (int i=0;i< nTriangles; i+=3)
-	 {
-		 TrianglesIdx.emplace_back( i,i + 1,i + 2 );
-	 }
-	 VtxTexUV=OBjReader::AssignTextureCoordinates(vtxs);
+	TrianglesIdx.clear();
+	int nTriangles = vtxs.size() / 3;
+	TrianglesIdx.reserve(nTriangles);
+	for (int i = 0; i < nTriangles; i += 3)
+	{
+		TrianglesIdx.emplace_back(i, i + 1, i + 2);
+	}
+	VtxTexUV = OBjReader::AssignTextureCoordinates(vtxs);
 
- }
+}
 
 
 
@@ -98,15 +97,15 @@ void GraphicsPipeline::LoadTexture(std::filesystem::path tex_path) {
 	LoadTexture(tex_path.string());
 
 }
-	
+
 
 void  GraphicsPipeline::LoadTexture(std::string stringPath) {
-	
+
 	auto iter = stringPath.find(".jpg");
 	auto iter2 = stringPath.find(".bmp");
 	if (iter != std::string::npos)
 	{
-		CImg<unsigned char > TextureImg(stringPath.c_str()),visu();
+		CImg<unsigned char > TextureImg(stringPath.c_str()), visu();
 		Texture  tX;
 		tX.TW = TextureImg.width();
 		tX.TH = TextureImg.height();
@@ -148,8 +147,8 @@ void GraphicsPipeline::VertexesProcess(const RenderableObject& yu) {
 
 	const int N_VERTEX = yu.Vertices.size();
 	const int N_VERTEXNORMAL = yu.VtxNormals.size();
-	const int N_VERTEXUV= yu.VtxTexUV.size();
-	assert(N_VERTEX==N_VERTEXNORMAL&& N_VERTEX == N_VERTEXUV);
+	const int N_VERTEXUV = yu.VtxTexUV.size();
+	assert(N_VERTEX == N_VERTEXNORMAL && N_VERTEX == N_VERTEXUV);
 	/*auto& vertex_coordinate_buffer = Buffers[0];
 	auto& vertex_normal_buffer = Buffers[1];
 	auto& vertex_shading_buffer = Buffers[3];
@@ -172,7 +171,7 @@ void GraphicsPipeline::VertexesProcess(const RenderableObject& yu) {
 	Matrix4 NoramlViewModel = inv(ViewModel).Transpose();
 
 	mVec4f LightSourceHomo = V * mVec4f(InitLightPos, 1);
-	LightSourceEyeSpace = (LightSourceHomo/ LightSourceHomo.w).tomVec3();
+	LightSourceEyeSpace = (LightSourceHomo / LightSourceHomo.w).tomVec3();
 
 
 
@@ -194,8 +193,8 @@ void GraphicsPipeline::VertexesProcess(const RenderableObject& yu) {
 		//-------------------------------
 		//Pervertex  LightSource
 		//-------------------------------
-		mVec3f shading = ADSshading({0,0,0},LightSourceEyeSpace, EyeSpaceCoordinates, vertex_normal, yu.Material());
-	
+		mVec3f shading = ADSshading({ 0,0,0 }, LightSourceEyeSpace, EyeSpaceCoordinates, vertex_normal, yu.Material());
+
 
 		vertex tmp = { EyeSpaceHomoCoordinates.tomVec3(),vertex_normal,shading, yu.VtxTexUV[Vid] };
 		TargetRenderVertexes.push_back(std::move(tmp));
@@ -212,28 +211,31 @@ void GraphicsPipeline::VertexesProcess(const RenderableObject& yu) {
 	//-------------------------------
 	//primitives assembly
 	//-------------------------------
-	
+
 	TargetRenderTriangles.reserve(yu.TrianglesIdx.size());
 	for (auto idxs : yu.TrianglesIdx) {
-			TargetRenderTriangles.emplace_back(TargetRenderVertexes[idxs.x], TargetRenderVertexes[idxs.y], TargetRenderVertexes[idxs.z]);
+		TargetRenderTriangles.emplace_back(TargetRenderVertexes[idxs.x], TargetRenderVertexes[idxs.y], TargetRenderVertexes[idxs.z]);
 	}
-	//# TODO: Clip
-	float alphaOver2 = Radians(_Camera.fov * 0.5);
-	float n = _Camera.getNearPlane();
-	float f = _Camera.getFarPlane();
-	Plane<float>Top = { mVec3f{ 0,0,0 }, mVec3f{0,std::cos(alphaOver2),std::sin(alphaOver2)}};
-	Plane<float>Bottom = { mVec3f{ 0,0,0 },mVec3f {0,-std::cos(alphaOver2),std::sin(alphaOver2)} };
-	Plane<float>Left= { mVec3f { 0,0,0 }, mVec3f{-std::cos(alphaOver2),0,std::sin(alphaOver2)} };
-	Plane<float>Right= { mVec3f{ 0,0,0 }, mVec3f{std::cos(alphaOver2),0,std::sin(alphaOver2)} };
-	Plane<float>Near= { mVec3f { 0,0,n }, mVec3f{0,0,1} };
-	Plane<float>Far= { mVec3f{ 0,0,f }, mVec3f{0,0,-1} };
-	
-	clip_with_plane(Near, TargetRenderTriangles, TargetRenderTriangles);
-	clip_with_plane(Top, TargetRenderTriangles, TargetRenderTriangles);
-	clip_with_plane(Bottom, TargetRenderTriangles, TargetRenderTriangles);
-	clip_with_plane(Left, TargetRenderTriangles, TargetRenderTriangles);
-	clip_with_plane(Right, TargetRenderTriangles, TargetRenderTriangles);
-	clip_with_plane(Far, TargetRenderTriangles, TargetRenderTriangles);
+	//Clip
+	if(Clip) {
+		float alphaOver2 = Radians(_Camera.fov * 0.5);
+		float n = _Camera.getNearPlane();
+		float f = _Camera.getFarPlane();
+		Plane<float>Top = { mVec3f{ 0,0,0 }, mVec3f{0,std::cos(alphaOver2),std::sin(alphaOver2)} };
+		Plane<float>Bottom = { mVec3f{ 0,0,0 },mVec3f {0,-std::cos(alphaOver2),std::sin(alphaOver2)} };
+		Plane<float>Left = { mVec3f { 0,0,0 }, mVec3f{-std::cos(alphaOver2),0,std::sin(alphaOver2)} };
+		Plane<float>Right = { mVec3f{ 0,0,0 }, mVec3f{std::cos(alphaOver2),0,std::sin(alphaOver2)} };
+		Plane<float>Near = { mVec3f { 0,0,n }, mVec3f{0,0,1} };
+		Plane<float>Far = { mVec3f{ 0,0,f }, mVec3f{0,0,-1} };
+
+		clip_with_plane(Near, TargetRenderTriangles, TargetRenderTriangles);
+		clip_with_plane(Top, TargetRenderTriangles, TargetRenderTriangles);
+		clip_with_plane(Bottom, TargetRenderTriangles, TargetRenderTriangles);
+		clip_with_plane(Left, TargetRenderTriangles, TargetRenderTriangles);
+		clip_with_plane(Right, TargetRenderTriangles, TargetRenderTriangles);
+		clip_with_plane(Far, TargetRenderTriangles, TargetRenderTriangles);
+	}
+
 
 }
 
@@ -249,7 +251,7 @@ static inline T PerspetiveCorrectDepth(T iaz, T ibz, T icz, T uv_u, T uv_v) {
 
 
 
-void GraphicsPipeline::Rasterization( ShadingMaterial& myu, framebuffer_t* Fb, const unsigned int texChannel) const
+void GraphicsPipeline::Rasterization(ShadingMaterial& myu, framebuffer_t* Fb, const unsigned int texChannel) const
 {
 	auto clamp = [](float in)->float {
 		return in > 1.0f ? 1.0f : (in < 0.0f ? 0.0f : in);
@@ -277,7 +279,7 @@ void GraphicsPipeline::Rasterization( ShadingMaterial& myu, framebuffer_t* Fb, c
 			mVec3f normal = Tri.vtxa.normal + ((Tri.vtxc.normal - Tri.vtxa.normal) * uv.x + (Tri.vtxb.normal - Tri.vtxa.normal) * uv.y);
 			normal.normalize();//normal in eyespace,light source in eyespace
 			mVec3f point = Tri.vtxa.Coordinate * (1 - uv.x - uv.y) + (Tri.vtxc.Coordinate * uv.x) + (Tri.vtxb.Coordinate * uv.y);
-			tmp = ADSshading({ 0,0,0 }, LightSourceEyeSpace,point, normal, myu);
+			tmp = ADSshading({ 0,0,0 }, LightSourceEyeSpace, point, normal, myu);
 
 			//stripe texture
 			if (texChannel == 1) {
@@ -297,13 +299,13 @@ void GraphicsPipeline::Rasterization( ShadingMaterial& myu, framebuffer_t* Fb, c
 				tmp = backcolor * (frac1)+tmp * (1 - frac1);
 
 			}
-			else if (texChannel >=2) {
+			else if (texChannel >= 2) {
 				float scale = texture_scaling;
 				mVec2<float> Texcoords = Tri.vtxa.st + ((Tri.vtxc.st - Tri.vtxa.st) * uv.x + (Tri.vtxb.st - Tri.vtxa.st) * uv.y);
-				Texcoords = Texcoords* interpolateZ;
+				Texcoords = Texcoords * interpolateZ;
 				Texcoords.x = fract(Texcoords.x * scale);
 				Texcoords.y = fract(Texcoords.y * scale);
-				mVec3f backcolor =LookupTexel(Texcoords, texChannel-2);
+				mVec3f backcolor = LookupTexel(Texcoords, texChannel - 2);
 				tmp = { backcolor.x * tmp.x,  backcolor.y * tmp.y, backcolor.z * tmp.z };
 				tmp.ColorClamp();
 			}
@@ -327,7 +329,7 @@ void GraphicsPipeline::Rasterization( ShadingMaterial& myu, framebuffer_t* Fb, c
 	float* depthbuffer = Fb->depth_buffer;
 	std::mutex buffer_mutex;
 	//Rasterization
-	
+
 	auto EarlyZtest = [&](int x, int y, float z)->bool {
 		//mVec2<int> ScreenXY = { x, window_height - (y + 1) };
 		mVec2<int> ScreenXY = { y ,x };
@@ -344,16 +346,15 @@ void GraphicsPipeline::Rasterization( ShadingMaterial& myu, framebuffer_t* Fb, c
 
 
 	auto outputshading = [&](const fragment& TriFrag) {
-		//mVec2<int> ScreenXY = {  window_height - (TriFrag.XY.y + 1) ,TriFrag.XY.x };
 		mVec2<int> ScreenXY = { TriFrag.XY.y ,TriFrag.XY.x };
 
 		{
 			//std::lock_guard<std::mutex> lock(buffer_mutex);
 			//look at -z direction, this depth is z in screen space 
-			if ( depthbuffer[ScreenXY.x * window_width + ScreenXY.y] > TriFrag.depth) {
-				unsigned char fragColor[4] = { static_cast<unsigned char>(TriFrag.RGBv.x * 255),static_cast<unsigned char>(TriFrag.RGBv.y * 255),static_cast<unsigned char>(TriFrag.RGBv.z * 255),0 };
+			if (depthbuffer[ScreenXY.x * window_width + ScreenXY.y] <TriFrag.depth) {
+				unsigned char fragColor[4] = { static_cast<unsigned char>(TriFrag.RGBv.x * 255),
+					static_cast<unsigned char>(TriFrag.RGBv.y * 255),static_cast<unsigned char>(TriFrag.RGBv.z * 255),0 };
 				Fb->setvalue(ScreenXY.x, ScreenXY.y, fragColor);
-				//Fb->color_buffer[ScreenXY.y*w + ScreenXY.x] = TriFrag.RGB;
 				depthbuffer[ScreenXY.x * window_width + ScreenXY.y] = TriFrag.depth;
 			}
 
@@ -381,13 +382,12 @@ void GraphicsPipeline::Rasterization( ShadingMaterial& myu, framebuffer_t* Fb, c
 		Ymax = int(ceilf(MAX(MAX(Tri.a.y, Tri.b.y), Tri.c.y)));
 		if (Xmin < 0 || Xmin >= window_width || Xmax < 0 || Xmax >= window_width)return;
 		if (Ymin < 0 || Ymin >= window_height || Ymax < 0 || Ymax >= window_height)return;
-		if (Tri.a.z > 0 || Tri.b.z > 0 || Tri.c.z > 0)return;
-
+		
 
 		//early-z
-		const float iaz = 1.0f / (Tri.a.z - depthA);
+		/*const float iaz = 1.0f / (Tri.a.z - depthA);
 		const float ibz = 1.0f / (Tri.b.z - depthA);
-		const float icz = 1.0f / (Tri.c.z - depthA);
+		const float icz = 1.0f / (Tri.c.z - depthA);*/
 
 		mVec2<float>FirstTime;
 		mVec2<float>Incremental_uv;
@@ -398,7 +398,8 @@ void GraphicsPipeline::Rasterization( ShadingMaterial& myu, framebuffer_t* Fb, c
 				if (y == Ymin) {
 					mVec2<float>  uv = Tri.PointIsInTriangle(mVec3f(x, y, 0));
 					if (uv.x >= 0 && uv.y >= 0 && uv.x + uv.y <= 1) {
-						float interpolatez = PerspetiveCorrectDepth(iaz, ibz, icz, uv.x, uv.y);
+						//float interpolatez = PerspetiveCorrectDepth(iaz, ibz, icz, uv.x, uv.y);
+						float interpolatez = Tri.a.z + uv.x * (Tri.c.z - Tri.b.z ) + uv.y* (Tri.b.z - Tri.a.z);//P = A + u * (C - A) + v * (B - A)  ;
 						/*if constexpr (UseEarlyZ)
 							if (!EarlyZtest(x, y, interpolatez))continue;*/
 
@@ -415,9 +416,9 @@ void GraphicsPipeline::Rasterization( ShadingMaterial& myu, framebuffer_t* Fb, c
 					mVec2<float>  uv = Tri.PointIsInTriangle(mVec3f(x, y, 0));
 					if (uv.x >= 0 && uv.y >= 0 && uv.x + uv.y <= 1) {
 
-						float interpolatez = PerspetiveCorrectDepth(iaz, ibz, icz, uv.x, uv.y);
-					/*	if constexpr (UseEarlyZ)
-							if (!EarlyZtest(x, y, interpolatez))continue;*/
+						float interpolatez = Tri.a.z + uv.x * (Tri.c.z - Tri.b.z) + uv.y * (Tri.b.z - Tri.a.z);//P = A + u * (C - A) + v * (B - A)  ;
+						/*	if constexpr (UseEarlyZ)
+								if (!EarlyZtest(x, y, interpolatez))continue;*/
 
 						mVec4f attibs = FramentShader(TriWithAtrib, uv, interpolatez);
 						//RasterResult.emplace_back(attibs.w ,mVec2<int>{x, y } ,attibs.tomVec3f());
@@ -431,7 +432,7 @@ void GraphicsPipeline::Rasterization( ShadingMaterial& myu, framebuffer_t* Fb, c
 					Lastuv = uv;
 					if (uv.x >= 0 && uv.y >= 0 && uv.x + uv.y <= 1) {
 
-						float interpolatez = PerspetiveCorrectDepth(iaz, ibz, icz, uv.x, uv.y);
+						float interpolatez = Tri.a.z + uv.x * (Tri.c.z - Tri.b.z) + uv.y * (Tri.b.z - Tri.a.z);//P = A + u * (C - A) + v * (B - A)  ;
 						/*if constexpr (UseEarlyZ)
 							if (!EarlyZtest(x, y, interpolatez))continue;*/
 
@@ -453,7 +454,7 @@ void GraphicsPipeline::Rasterization( ShadingMaterial& myu, framebuffer_t* Fb, c
 
 
 
-//#define SingleThread
+	//#define SingleThread
 #ifdef SingleThread
 	auto policy = std::execution::seq;
 #else
@@ -468,7 +469,7 @@ void GraphicsPipeline::Rasterization( ShadingMaterial& myu, framebuffer_t* Fb, c
 void GraphicsPipeline::Render(const std::vector<RenderableObject>& robjs, framebuffer_t* Fb) {
 	float* depthbuffer = Fb->depth_buffer;
 	assert(depthbuffer != NULL);
-	memset(depthbuffer, 0x7f, DEFAULT_WINDOW_HEIGHT * DEFAULT_WINDOW_WIDTH * sizeof(float));
+	memset(depthbuffer, 0xfe, static_cast<size_t>(window_height) * static_cast<size_t>(window_width) * sizeof(float));
 
 	for (const auto& r_object : robjs)
 	{
@@ -480,9 +481,9 @@ void GraphicsPipeline::Render(const std::vector<RenderableObject>& robjs, frameb
 
 	}
 
-	
-	
-	
+
+
+
 }
 
 
@@ -497,16 +498,16 @@ void GraphicsPipeline::clearPipeline() {
 GraphicsPipeline::GraphicsPipeline(int h, int w) : window_height(h), window_width(w) {
 	//mTextures.emplace_back(LoadTexture());
 
-	Clip = false;
-	
 	_Camera = Camera(InitEyePos, InitGazeDirection, InitTopDirection);
-	_Camera.SetFrustm(1, -1, -1, 1, 90.0f, InitEyePos.z + 400);
+	_Camera.SetFrustm(1, -1, -1, 1, 45.0f, InitEyePos.z + 400);
 
 	//pre-allocate memory:
 	//FragmentsAfterRasterization.resize(4096);
 
 
 };
+
+
 
 
 void clip_with_plane(const Plane<float>& c_plane, std::vector<TriangleWithAttributes>& in_list,
@@ -535,28 +536,28 @@ void clip_with_plane(const Plane<float>& c_plane, std::vector<TriangleWithAttrib
 
 			if (d1 * d2 < 0)
 			{
-				float t = c_plane.cal_intersectRatio(pre_vertex, cur_vertex);
-				mVec3f interpolateCordinate= cur_vertex + pre_vertex * (1 - t);
+				float t = d1/(d1-d2);
+				mVec3f interpolateCordinate = cur_vertex *t+ pre_vertex * (1 - t);
 				//attributes
-				mVec3f interpolatenormal = thisTriangleVertices[current_index].normal + thisTriangleVertices[previous_index].normal * (1 - t);
-				mVec3f interpolateshading= thisTriangleVertices[current_index].shading + thisTriangleVertices[previous_index].shading * (1 - t);
-				mVec2f interpolateUV= thisTriangleVertices[current_index].st + thisTriangleVertices[previous_index].st * (1 - t);
-				mVec2<float> st;
-				remainPoints[remain_vert_num++] = { interpolateCordinate,interpolatenormal,interpolateshading,interpolateUV  };
+				mVec3f interpolatenormal = thisTriangleVertices[current_index].normal * t + thisTriangleVertices[previous_index].normal * (1 - t);
+				mVec3f interpolateshading = thisTriangleVertices[current_index].shading * t + thisTriangleVertices[previous_index].shading * (1 - t);
+				mVec2f interpolateUV = thisTriangleVertices[current_index].st * t + thisTriangleVertices[previous_index].st * (1 - t);
+				remainPoints[remain_vert_num++] = { interpolateCordinate,interpolatenormal,interpolateshading,interpolateUV };
 
 			}
 			if (d2 < 0)
 			{
-				remainPoints[remain_vert_num++] = { cur_vertex ,1.0f };
+				remainPoints[remain_vert_num++] = thisTriangleVertices[current_index];
 			}
 		}
 
 		if (remain_vert_num == 3) {
-			tempOuterList.emplace_back(triangle);
-		}
-		else	if (remain_vert_num == 4) {
 			TriangleWithAttributes newTriangle1 = { remainPoints[0],remainPoints[1],remainPoints[2] };
-			TriangleWithAttributes newTriangle2 = { remainPoints[2],remainPoints[1],remainPoints[3] };
+			tempOuterList.emplace_back(newTriangle1);
+		}
+		else    if (remain_vert_num == 4) {
+			TriangleWithAttributes newTriangle1 = { remainPoints[0],remainPoints[1],remainPoints[2] };
+			TriangleWithAttributes newTriangle2 = { remainPoints[1],remainPoints[2],remainPoints[3] };
 			tempOuterList.emplace_back(std::move(newTriangle1));
 			tempOuterList.emplace_back(std::move(newTriangle2));
 
@@ -565,7 +566,6 @@ void clip_with_plane(const Plane<float>& c_plane, std::vector<TriangleWithAttrib
 			std::cout << "E: Unknown Error!";
 			return;
 		}
-
 
 
 	}

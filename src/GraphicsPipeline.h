@@ -122,6 +122,11 @@ public:
 	inline ShadingMaterial Material() const{
 		return this->shma;
 	}
+	inline void movePos(const mVec3f& STEP) {
+		if (fixObject)return;
+		this->ModleMatrix = translateMatrix(STEP)* this->ModleMatrix;
+	}
+
 	RenderableObject() {
 		ModleMatrix = eye(1);
 		this->shma = { mVec3f(1,1,1) * 0.002, mVec3f(1, 1, 1) * 600, mVec3f(1, 1, 1) * 20,8 };//  0.0005      8
@@ -287,7 +292,7 @@ public:
 class GraphicsPipeline {
 
 public:
-	bool Clip;
+	bool Clip=true;
 	bool UsePhongShading;//false for GouraudShading  true for phongshading 
 	Camera  _Camera;
 	int window_height, window_width;
@@ -349,6 +354,7 @@ private:
 
 
 };
+
 void clip_with_plane(const Plane<float>& c_plane, std::vector<TriangleWithAttributes>& in_list, std::vector<TriangleWithAttributes>& outer_list);
 
 

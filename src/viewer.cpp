@@ -69,59 +69,94 @@ int  Viewer::initAssetsPath () {
 
 
 void Viewer::init_callbacks( ) {
+	static bool shift_is_pressed = false;
     if (windowHandle!=nullptr)
     {
 
-		mArcControl = {DEFAULT_WINDOW_WIDTH,DEFAULT_WINDOW_HEIGHT};
-
 		auto keypressed_lambda = [this](window_t* window, unsigned char key, int pressed)->void {
-        
-			if (key == 'd' || key == 'D') {
-				m_g_pip->_Camera.UpdatePos(mVec3f(1, 0, 0));
-			}
-			if (key == 'a'|| key == 'A') {
-				m_g_pip->_Camera.UpdatePos(mVec3f(-1, 0, 0));
-			}
-			if (key == 's' || key == 'S') {
-				m_g_pip->_Camera.UpdatePos(mVec3f(0, -1, 0));
-			}
-			if (key == 'w' || key == 'W') {
-				m_g_pip->_Camera.UpdatePos(mVec3f(0, 1, 0));
-			}
-			if (key == 'q' || key == 'Q') {
-				control_ob_id = (control_ob_id + 1) % (m_objects->size());
-			}
-			if (key == 'e' || key == 'E') {//go outside 
-				m_g_pip->_Camera.UpdatePos(mVec3f(0, 0, -1));
-			}
-			if (key == 'r' || key == 'R') {//go into 
-				m_g_pip->_Camera.UpdatePos(mVec3f(0, 0, 1));
-			}
-			if (key == 'b' || key == 'B') {//go into 
-				if (pressed == 1)//only for key pressed
-				    m_g_pip->UsePhongShading = !m_g_pip->UsePhongShading;
-			}
-			if (key == 'l' || key == 'L') {//go into 
-				if (pressed == 1)//only for key pressed
-					texture_scaling *= 2;
-			}
-			if (key == 'K' || key == 'k') {//go into 
-				if (pressed == 1)//only for key pressed
-					texture_scaling *= 0.5f;
-			}
-			//next texture mode
-			if (key == 'n' || key == 'N') {//go into 
-                if (pressed == 1)//only for key pressed
-                {
-					int activeTexCount = m_g_pip->getActiveTextureNumber();
-					m_objects->at(control_ob_id).texturechannelID= (m_objects->at(control_ob_id).texturechannelID+1)% (activeTexCount+2);
-					std::cout << "Texture channel=" << m_objects->at(control_ob_id).texturechannelID << ". Active texture channel= " << activeTexCount<<"\n";
+			if (pressed == 1)//for key pressed
+			{
+				if (key == unsigned char(16)) {
+					shift_is_pressed = true;
+				}
+
+				if (key == 'D') {
+					if (shift_is_pressed) m_objects->at(control_ob_id).movePos(mVec3f(1, 0, 0));
+					else m_g_pip->_Camera.UpdatePos(mVec3f(1, 0, 0));
+				}
+				if (key == 'A') {
+					if (shift_is_pressed) m_objects->at(control_ob_id).movePos(mVec3f(-1, 0, 0));
+					else m_g_pip->_Camera.UpdatePos(mVec3f(-1, 0, 0));
+				}
+				if ( key == 'S') {
+					if (shift_is_pressed) m_objects->at(control_ob_id).movePos(mVec3f(0, -1, 0));
+					else m_g_pip->_Camera.UpdatePos(mVec3f(0, -1, 0));
+				}
+				if ( key == 'W') {
+					if (shift_is_pressed) m_objects->at(control_ob_id).movePos(mVec3f(0, 1, 0));
+					else m_g_pip->_Camera.UpdatePos(mVec3f(0, 1, 0));
+				}
+				if (key == 'Q') {
+					if (shift_is_pressed) m_objects->at(control_ob_id).movePos(mVec3f(0, 0, -1));
+					else m_g_pip->_Camera.UpdatePos(mVec3f(0, 0, -1));
+				}
+				if ( key == 'E') {//go outside 
+					if (shift_is_pressed) m_objects->at(control_ob_id).movePos(mVec3f(0, 0, 1));
+					else m_g_pip->_Camera.UpdatePos(mVec3f(0, 0, 1));
+				}
+				if ( key == 'R') {//go into 
+					if (shift_is_pressed) m_objects->at(control_ob_id).setModelMatrix(eye(4)); 
+					else 	control_ob_id = (control_ob_id + 1) % (m_objects->size());
+
+				}	
+				if (key == 'C'&& shift_is_pressed) {//go into 
+					m_g_pip->Clip = !m_g_pip->Clip;
+					if (m_g_pip->Clip) std::cout << "clipping is on .";
+					else std::cout << "clipping is off .";
+				}
 				
 
-                }
+				if (key == 'y' || key == 'Y') {
+					m_g_pip->_Camera.UpdateYawAngle(1.0);
+				}
+				if (key == 'u' || key == 'U') {
+					m_g_pip->_Camera.UpdateYawAngle(-1.0);
+				}
+				if (key == 'p' || key == 'P') {//go outside 
+					m_g_pip->_Camera.UpdatePitchAngle(1.0);
+				}
+				if (key == 'O' || key == 'o') {//go outside 
+					m_g_pip->_Camera.UpdatePitchAngle(-1.0);
+				}
+
+				if (key == 'K' || key == 'k') {//go into 
+					if (pressed == 1)//only for key pressed
+						texture_scaling *= 0.5f;
+				}
+				if (key == 'b' || key == 'B') {//go into 
+					if (pressed == 1)//only for key pressed
+						m_g_pip->UsePhongShading = !m_g_pip->UsePhongShading;
+				}
+				if (key == 'l' || key == 'L') {//go into 
+					if (pressed == 1)//only for key pressed
+						texture_scaling *= 2;
+				}
+				//next texture mode
+				if (key == 'n' || key == 'N') {//go into 
+					int activeTexCount = m_g_pip->getActiveTextureNumber();
+					m_objects->at(control_ob_id).texturechannelID = (m_objects->at(control_ob_id).texturechannelID + 1) % (activeTexCount + 2);
+					std::cout << "Texture channel=" << m_objects->at(control_ob_id).texturechannelID << ". Active texture channel= " << activeTexCount << "\n";
+				}
+
 
 			}
 
+
+			if (pressed == 0) {
+				if (key == unsigned char(16)) {
+					shift_is_pressed = false;
+				}
+			}
 
 		};
 
@@ -139,8 +174,8 @@ void Viewer::init_callbacks( ) {
 			if (pressed==1)
 			{
 				if (button == BUTTON_R) {
-					ThisRot = eye(4);
-					m_objects->at(control_ob_id).setModelMatrix(ThisRot);
+					/*ThisRot = eye(4);
+					m_objects->at(control_ob_id).setModelMatrix(ThisRot);*/
 				}
 				else if (button == BUTTON_L)
 				{
@@ -196,18 +231,19 @@ void Viewer::init_callbacks( ) {
 void Viewer::init_demo_scene() {
 	//init_land by marching cube
 	MarchingCubesDrawer tmp;
-	tmp.randomGenrateLandmass({ 32,64,5}, 0.02);
+	tmp.randomGenrateLandmass({ 64,64,5}, 1);
 
 	RenderableObject land;
 	land.BuildLikGLBegin(*tmp.getVertices(), *tmp.getNormals(), MeshBuildConvention::LIKE_GL_TRIANGLE);
 	land.setModelMatrix(translateMatrix({ 45,8,0 })*scaleMatrix(65.0f) * rotateMatrix({ 1,0,0 }, 90)   );
-	land.updateMaterial({ mVec3f(1.39,0.69,0.19) * 0.0005, mVec3f(139,69,19)*0.05, mVec3f(139,69,19) ,8 });
-	land.fixit();
-
+	land.updateMaterial({ mVec3f(1.39,0.69,0.19) * 0.005, mVec3f(139,69,19)*0.01, mVec3f(139,69,19)*0.01 ,8 });
+	Cube origin;
+	origin.fixit();
 	Cube lightBox;
-	lightBox.setModelMatrix(translateMatrix(InitLightPos) * scaleMatrix(2.0f) * rotateMatrix({ 0.45,0.45,0 }, 45)) ;
+	lightBox.setModelMatrix(translateMatrix(InitLightPos) * scaleMatrix(0.5f) * rotateMatrix({ 0.45,0.45,0 }, 45)) ;
 	lightBox.texturechannelID = 3;
-	lightBox.fixit();
+	
+
 
 	fs::path  Path_obj_beacon = m_projectRootDir / "assets" / AssetsNames[0];
 	fs::path  Path_obj = m_projectRootDir / "assets" / AssetsNames[1];
@@ -215,15 +251,19 @@ void Viewer::init_demo_scene() {
 	fs::path  Path_texture_sky = m_projectRootDir / "assets" / AssetsNames[5];
 	m_objreader->readObjFile(Path_obj.string());
 	auto obj_crab = RenderableObject(m_objreader->TrianglesIdx, m_objreader->Vertexes, m_objreader->VertexesNormal, m_objreader->VertexesTexture);
-	obj_crab.updateMaterial({ mVec3f(0,0.69,0.99) * 0.005, mVec3f(0,69,99) * 0.5, mVec3f(0,69,99) ,8 });
+	obj_crab.updateMaterial({ mVec3f(0,0.69,0.99) * 0.005, mVec3f(0,69,99) * 2, mVec3f(0,69,99) ,8 });
 	m_objreader->clear();
 	m_objreader->readObjFile(Path_obj_beacon.string());
 	auto obj_beacon = RenderableObject(m_objreader->TrianglesIdx, m_objreader->Vertexes, m_objreader->VertexesNormal, m_objreader->VertexesTexture);
-	obj_beacon.setModelMatrix(translateMatrix({ -24.5,-48,-325 }));
+	obj_beacon.setModelMatrix(translateMatrix({ -55,-45,-395 }));
 	/*m_objects->push_back(obj);
 	obj.ModleMatrix *= translateMatrix(mVec3f(50, -0, -0));*/
+	m_objects->push_back(std::move(origin));
 	m_objects->push_back(std::move(obj_crab));
-	//m_objects->push_back(std::move(obj_beacon));
+	m_objects->push_back(std::move(obj_beacon));
+	//m_objects->push_back(lightBox);
+	lightBox.setModelMatrix(translateMatrix({-8,-1,-3}) * scaleMatrix(4.0f) * rotateMatrix({ 0.45,0.45,0 }, 45));
+	//lightBox.fixit();
 	//m_objects->push_back(std::move(lightBox));
 	//m_objects->push_back(std::move(land));
 
@@ -254,6 +294,7 @@ void Viewer::launch_init(const char* title, int width /*= 0*/, int height /*= 0*
 		}
 
 		m_g_pip = std::make_unique<GraphicsPipeline>(height, width);
+		mArcControl = { DEFAULT_WINDOW_WIDTH,DEFAULT_WINDOW_HEIGHT };
 		init_demo_scene();
     }
     catch (std::string errorInfo)
@@ -287,8 +328,8 @@ static auto string2wchars (std::string str, std::wstring& szDst) {
 void Viewer::pre_draw() {
 	static int a = 0;
 	float angle = Radians(a);
-	InitLightPos = { 12.5f * cos(angle) ,25.0f ,12.5f * sin(angle) };
-	a += 2;
+	InitLightPos = { 0.125f * cos(angle) ,InitLightPos.y ,0.125f * sin(angle) };
+	a += 1;
 	a = a % 360;
     m_framebuffer->framebuffer_fast_clear();
 }

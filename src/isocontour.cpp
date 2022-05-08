@@ -325,13 +325,34 @@ void MarchingCubesDrawer::randomGeneratVolumeData(double Noise, mVec3i GridXYZ) 
 void MarchingCubesDrawer::randomGenrateLandmass(mVec3i GridXYZ, double Noise) {
 
 	constexpr double iso_value = 20;
-	randomGeneratVolumeData( Noise, GridXYZ);
-	constexpr int MainLandZ = 2;
-	assert(MainLandZ<GridXYZ.z-1);
+	//randomGeneratVolumeData( Noise, GridXYZ);
+	dimx = GridXYZ.x;
+	dimy = GridXYZ.y;
+	dimz = GridXYZ.z;
+	assert(dimz > 0 && dimx > 0 && dimy > 0);
+	this->volumeData = new double[dimx * dimy * dimz];
+	assert(volumeData);
+	memset(volumeData,0, dimx * dimy * dimz*sizeof(float));
+
+	std::uniform_real_distribution<double>r(-1, 1);
+	std::default_random_engine e(time(NULL));
+	std::seed_seq seed2{ r(e), r(e), r(e), r(e), r(e), r(e), r(e), r(e) };
+	std::mt19937 e2(seed2);
+	std::normal_distribution<> normal_dist(0, Noise * Noise);
+
+	constexpr int MainLandZ0 = 1;
+	constexpr int MainLandZ1 = 2;
+	constexpr int MainLandZ2 = 3;
+
+	assert(MainLandZ2 <GridXYZ.z-1);
 	for (int y = 0; y < dimy; y++) {
 		for (int x = 0; x < dimx; x++) {
-
-			int flatindex = x + (y * dimx) + (MainLandZ * dimy * dimx);
+			double randomV = normal_dist(e2);
+			int thisz = MainLandZ1;
+			if (randomV > 0.2) thisz= MainLandZ2;
+			if (randomV <- 0.2) thisz = MainLandZ1;
+			
+			int flatindex = x + (y * dimx) + (thisz* dimy * dimx);
 			this->volumeData[flatindex] += iso_value;
 		}
 	}

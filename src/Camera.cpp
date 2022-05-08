@@ -17,8 +17,7 @@ Camera::Camera(mVec3f _position, mVec3f _front, mVec3f _up)
 	right = front.cross_product(up);
 	right.normalize();
 	
-	//nearPlane =  ( tan(fov * 0.5 *PI / 180)) ;
-	fov = 75.0f;
+	fov = 60.0f;
 	yaw = 90.0f;
 	pitch = 0;
 }
@@ -53,9 +52,10 @@ void Camera::UpdatePitchAngle(float dpitch) {
 	if (pitch < -89.0f)pitch = -89.0f;
 
 	mVec3f direction(1.0f);
-	direction.y = cos(Radians(yaw))*cos(Radians(pitch));
-	direction.x = sin(Radians(pitch));
-	direction.z= sin(Radians(yaw))*cos(Radians(pitch));
+	direction.x = cos(Radians(yaw)) * cos(Radians(pitch));
+	direction.y = sin(Radians(pitch));
+	direction.z = -sin(Radians(yaw)) * cos(Radians(pitch));
+	//front in word space
 	this->front =normalize(direction) ;
 	
 
@@ -69,8 +69,8 @@ void Camera::UpdateYawAngle( float dyaw) {
 	yaw += dyaw;
 
 	mVec3f direction(1.0f);
-	direction.y = cos(Radians(yaw))*cos(Radians(pitch));
-	direction.x = sin(Radians(pitch));
+	direction.x = cos(Radians(yaw))*cos(Radians(pitch));
+	direction.y = sin(Radians(pitch));
 	direction.z = -sin(Radians(yaw))*cos(Radians(pitch));
 	this->front = direction;
 	right = front.cross_product(up);
@@ -80,6 +80,7 @@ void Camera::UpdateYawAngle( float dyaw) {
 
 void Camera::UpdatePos(mVec3f p) {
 	position += (up*p.y+ right * p.x + front * p.z);
+
 }
 
 
@@ -88,9 +89,10 @@ Matrix4 Camera::genViewMat() const {
 }
 
 Matrix4 Camera::genPerspectiveMat() const{
-	assert(this->front.z==-1);
-	float n = (nearplane * this->front.z);
-	float f = (farPlane * this->front.z);
+	/*float n = (nearplane * this->front.z);
+	this is wrong as perseptiveMatrix is considered in eye space, so n,f always in -z direction*/
+	float n = (nearplane * -1);
+	float f = (farPlane * -1);
 
 	return	PerspectiveMatrix(r,l,t,b,n,f);
 }
@@ -116,6 +118,10 @@ mVec3f ArcBallControler::GetArcBallPositionVector(int x, int y) const{
 }
 
 Matrix4 ArcBallControler::GetArcBallrotateMatrix(mVec3f a, mVec3f b) const {
+	if (a==b)
+	{
+		return eye(4);
+	}
 	float ElmentDotproduct = a * b;
 	float aValue = a.x*a.x + a.y*a.y + a.z*a.z;
 	float bValue = b.x*b.x + b.y*b.y + b.z*b.z;
@@ -128,6 +134,7 @@ Matrix4 ArcBallControler::GetArcBallrotateMatrix(mVec3f a, mVec3f b) const {
 	mVec3f axis = a.cross_product(b);
 	axis.normalize();
 	Matrix4 tmp=rotateMatrix(axis, Theta);
+	assert(!isnan(tmp.p[0][0]) && !isnan(tmp.p[1][1]) && !isnan(tmp.p[2][2]) && !isnan(tmp.p[3][3]));
 	return tmp;
 
 }

@@ -1,5 +1,6 @@
 #pragma once
 #include"Macros.h"
+#include <assert.h>
 #include<cmath>
 #include <iostream>
 #include <vector>
@@ -69,6 +70,10 @@ public:
 	STRONG_INLINE mVec3& operator =(const mVec3&) = default;
 	STRONG_INLINE mVec3& operator =( mVec3&&) = default;
 
+	STRONG_INLINE bool operator ==(mVec3& rhs) {
+		return (rhs.x == x )&& (rhs.y == y )&& (rhs.z == z);
+	};
+
 	mVec3()=default;
 	STRONG_INLINE mVec3(T d);
 	~mVec3() = default;
@@ -88,6 +93,7 @@ public:
 	
 	STRONG_INLINE void normalize() {
 		T ma = static_cast<T>(this->getEuclideannNorms());
+		assert(ma!=0);
 		(*this) *= (1 / ma);
 	}
 
