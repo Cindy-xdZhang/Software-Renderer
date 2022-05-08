@@ -27,7 +27,6 @@ typedef struct vertex {
 	//attributes
 	mVec3f normal;
 	mVec3f shading;
-	mVec3f EyeSpaceCoordinate;
 	mVec2<float> st;
 }vtx;
 
@@ -92,19 +91,32 @@ public:
 class RenderableObject {
 private:
 	ShadingMaterial shma;	// material
-	unsigned int texturechannelID = 0;
+	bool fixObject = false;
+	Matrix4 ModleMatrix;
 public:
+	unsigned int texturechannelID = 0;//{0-no texture, 1 :procedual strip, 2,3,...:real textures}
 	
 	std::vector<mVec3i> TrianglesIdx;
-	std::vector<mVec3f> Vertexes;
-	std::vector<mVec3f> VertexesNormal;
+	std::vector<mVec3f> Vertices;
+	std::vector<mVec3f> VtxNormals;
 	std::vector<mVec2<float>>VtxTexUV;
-	Matrix4 ModleMatrix ;
+	
 	Matrix4 NormalMatrix ;
+	inline void fixit() {
+		fixObject = true;
+	}
+	inline void setModelMatrix(const Matrix4& mMat) {
+		if (fixObject)return;
+		this->ModleMatrix= mMat;
+	}
+	inline Matrix4 getModelMatrix() const{
+		return this->ModleMatrix ;
+	}
 	inline void updateMaterial(const ShadingMaterial& newmat) {
 		this->shma = newmat;
 	}
 	inline void updateMaterial(mVec3f a, mVec3f d, mVec3f s,float f) {
+	if (!fixObject)
 		this->shma = ShadingMaterial({ a, d, s,f });
 	}
 	inline ShadingMaterial Material() const{
@@ -117,20 +129,156 @@ public:
 
 	inline RenderableObject(std::vector<mVec3i> TrianglesIdx, std::vector<mVec3f>Vertexes, std::vector<mVec3f>VertexesNormal, std::vector<mVec2<float>>VertexesT) {
 		this->TrianglesIdx = TrianglesIdx;
-		this->Vertexes =Vertexes;
-		this->VertexesNormal = VertexesNormal;
+		this->Vertices =Vertexes;
+		this->VtxNormals = VertexesNormal;
 		this->VtxTexUV = VertexesT;
 		ModleMatrix = eye(1);
 		this->shma = { mVec3f(1,1,1) * 0.002, mVec3f(1, 1, 1)* 600, mVec3f(1, 1, 1)*20,8};//  0.0005      8
 	}
 
 	inline void InplaceRotation(int axis, float degree) {
+		if (fixObject)return;
 		//auto MatInv = inv(ModleMatrix);
 		auto rotate = rotateMatrix(axis,degree);
 		this->ModleMatrix = this->ModleMatrix * rotate;
 	}
 	
 	void BuildLikGLBegin(const std::vector<mVec3f>& vtxs, const std::vector<mVec3f>& normals, enum MeshBuildConvention Conv);
+
+
+};
+
+
+class Cube : public RenderableObject{
+public:
+	 inline Cube():RenderableObject() {
+		float side = 1.0f;
+		float side2 = side / 2.0f;
+
+		float v[24 * 3] = {
+			// Front
+		   -side2, -side2, side2,
+			side2, -side2, side2,
+			side2,  side2, side2,
+		   -side2,  side2, side2,
+		   // Right
+			side2, -side2, side2,
+			side2, -side2, -side2,
+			side2,  side2, -side2,
+			side2,  side2, side2,
+			// Back
+			-side2, -side2, -side2,
+			-side2,  side2, -side2,
+			 side2,  side2, -side2,
+			 side2, -side2, -side2,
+			 // Left
+			 -side2, -side2, side2,
+			 -side2,  side2, side2,
+			 -side2,  side2, -side2,
+			 -side2, -side2, -side2,
+			 // Bottom
+			 -side2, -side2, side2,
+			 -side2, -side2, -side2,
+			  side2, -side2, -side2,
+			  side2, -side2, side2,
+			  // Top
+			  -side2,  side2, side2,
+			   side2,  side2, side2,
+			   side2,  side2, -side2,
+			  -side2,  side2, -side2
+		};
+
+		float n[24 * 3] = {
+			// Front
+			0.0f, 0.0f, 1.0f,
+			0.0f, 0.0f, 1.0f,
+			0.0f, 0.0f, 1.0f,
+			0.0f, 0.0f, 1.0f,
+			// Right
+			1.0f, 0.0f, 0.0f,
+			1.0f, 0.0f, 0.0f,
+			1.0f, 0.0f, 0.0f,
+			1.0f, 0.0f, 0.0f,
+			// Back
+			0.0f, 0.0f, -1.0f,
+			0.0f, 0.0f, -1.0f,
+			0.0f, 0.0f, -1.0f,
+			0.0f, 0.0f, -1.0f,
+			// Left
+			-1.0f, 0.0f, 0.0f,
+			-1.0f, 0.0f, 0.0f,
+			-1.0f, 0.0f, 0.0f,
+			-1.0f, 0.0f, 0.0f,
+			// Bottom
+			0.0f, -1.0f, 0.0f,
+			0.0f, -1.0f, 0.0f,
+			0.0f, -1.0f, 0.0f,
+			0.0f, -1.0f, 0.0f,
+			// Top
+			0.0f, 1.0f, 0.0f,
+			0.0f, 1.0f, 0.0f,
+			0.0f, 1.0f, 0.0f,
+			0.0f, 1.0f, 0.0f
+		};
+
+		float tex[24 * 2] = {
+			// Front
+			0.0f, 0.0f,
+			1.0f, 0.0f,
+			1.0f, 1.0f,
+			0.0f, 1.0f,
+			// Right
+			0.0f, 0.0f,
+			1.0f, 0.0f,
+			1.0f, 1.0f,
+			0.0f, 1.0f,
+			// Back
+			0.0f, 0.0f,
+			1.0f, 0.0f,
+			1.0f, 1.0f,
+			0.0f, 1.0f,
+			// Left
+			0.0f, 0.0f,
+			1.0f, 0.0f,
+			1.0f, 1.0f,
+			0.0f, 1.0f,
+			// Bottom
+			0.0f, 0.0f,
+			1.0f, 0.0f,
+			1.0f, 1.0f,
+			0.0f, 1.0f,
+			// Top
+			0.0f, 0.0f,
+			1.0f, 0.0f,
+			1.0f, 1.0f,
+			0.0f, 1.0f
+		};
+
+		int el[6*2*3] = {
+			0,1,2,0,2,3,
+			4,5,6,4,6,7,
+			8,9,10,8,10,11,
+			12,13,14,12,14,15,
+			16,17,18,16,18,19,
+			20,21,22,20,22,23
+		};
+		this->Vertices.reserve(36*3);
+		this->VtxTexUV.reserve(36 * 3);
+		this->VtxNormals.reserve(36 * 3);
+		this->TrianglesIdx.reserve(36 * 3);
+		for (int i=0;i<12;i++)
+		{
+			int faceid [3]={el[3 * i], el[3 * i + 1], el[3 * i + 2] };
+			this->TrianglesIdx.emplace_back(faceid[0], faceid[1], faceid[2]);
+		}
+		for (int i = 0; i < 24; i++)
+		{
+			this->Vertices.emplace_back(v[i*3+0], v[i * 3 + 1], v[i * 3 + 2]);
+			this->VtxNormals.emplace_back(n[i * 3 + 0], n[i * 3 + 1], n[i * 3 + 2]);
+			this->VtxTexUV.emplace_back(tex[i*2], tex[i*2+1]);
+		}
+
+	}
 };
 
 
@@ -143,8 +291,6 @@ public:
 	bool UsePhongShading;//false for GouraudShading  true for phongshading 
 	Camera  _Camera;
 	int window_height, window_width;
-	
-	int TextureMode=0;
 
 	GraphicsPipeline() = default;
 	GraphicsPipeline(int w, int h);
@@ -181,24 +327,29 @@ public:
 			return C;
 	}
 
-	void Render(const RenderableObject& yu, framebuffer_t* Fb) ;
+
+	void Render(const std::vector<RenderableObject>& robj, framebuffer_t* Fb);
+
+	inline int getActiveTextureNumber() {
+		return mTextures.size() ;
+	}
 
 private:
+	std::vector<Texture>mTextures;
+
+	STRONG_INLINE  void VertexesProcess(const RenderableObject& yu);
+	STRONG_INLINE void Rasterization(ShadingMaterial& myu, framebuffer_t* Fb, const unsigned int texChannel) const;
+	//inline void FragmentProcess(framebuffer_t* Fb);
+
 
 	float* depthbuffer = NULL;
-	STRONG_INLINE  void VertexesProcess(const RenderableObject& yu);
-
-	STRONG_INLINE void Rasterization(const ShadingMaterial& myu, framebuffer_t* Fb) const;
-	//inline void FragmentProcess(framebuffer_t* Fb);
 
 	std::vector<mVec3f> Buffers[MAXIMUM_GPIPELINE_BUFFERS];
 	std::vector<TriangleWithAttributes>TargetRenderTriangles;
 
 
-	//std::vector<std::vector<fragment>> FragmentsAfterRasterization;
-	std::vector<Texture>mTextures;
 };
-
+void clip_with_plane(const Plane<float>& c_plane, std::vector<TriangleWithAttributes>& in_list, std::vector<TriangleWithAttributes>& outer_list);
 
 
 

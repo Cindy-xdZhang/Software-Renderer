@@ -141,7 +141,7 @@ public:
 
 	}
 
-	mVec3<T> tomVec3();
+	mVec3<T> tomVec3()const;
 	STRONG_INLINE	mVec3<T> HomoCordinates2InHomoVec3();
 	//mVec4(mVec4 A, mVec4 B);
 	mVec4(mVec4<T>A, mVec4<T> B);
@@ -177,6 +177,7 @@ public:
 
 
 using mVec3i = mVec3<int>;
+using mVec2f = mVec2<float>;
 using mVec3f = mVec3<float>;
 using mVec4f = mVec4<float>;
 
@@ -184,8 +185,10 @@ using mVec4f = mVec4<float>;
 class Triangle {
 public:
 	mVec3f a, b, c;
+	
 	STRONG_INLINE Triangle(mVec3f a, mVec3f b, mVec3f c) :a(a), b(b), c(c) {
 	}
+	
 	Triangle() = default;
 
 	STRONG_INLINE

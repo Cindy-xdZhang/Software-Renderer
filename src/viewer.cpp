@@ -12,7 +12,8 @@ static const std::string AssetsNames[] = {
     "crab.obj",
 	"crab.bmp",
      "Dream.bmp",
-    "brick1.bmp"
+    "brick1.bmp",
+	 "sky.bmp"
 };
 static MyTimer timer;
 
@@ -76,25 +77,25 @@ void Viewer::init_callbacks( ) {
 		auto keypressed_lambda = [this](window_t* window, unsigned char key, int pressed)->void {
         
 			if (key == 'd' || key == 'D') {
-				m_g_pip->_Camera.UpdatePos(mVec3f(5, 0, 0));
+				m_g_pip->_Camera.UpdatePos(mVec3f(1, 0, 0));
 			}
 			if (key == 'a'|| key == 'A') {
-				m_g_pip->_Camera.UpdatePos(mVec3f(-5, 0, 0));
+				m_g_pip->_Camera.UpdatePos(mVec3f(-1, 0, 0));
 			}
 			if (key == 's' || key == 'S') {
-				m_g_pip->_Camera.UpdatePos(mVec3f(0, -5, 0));
+				m_g_pip->_Camera.UpdatePos(mVec3f(0, -1, 0));
 			}
 			if (key == 'w' || key == 'W') {
-				m_g_pip->_Camera.UpdatePos(mVec3f(0, 5, 0));
+				m_g_pip->_Camera.UpdatePos(mVec3f(0, 1, 0));
 			}
 			if (key == 'q' || key == 'Q') {
-				InitLightPos.z -= 5;
+				control_ob_id = (control_ob_id + 1) % (m_objects->size());
 			}
 			if (key == 'e' || key == 'E') {//go outside 
-				m_g_pip->_Camera.UpdatePos(mVec3f(0, 0, -5));
+				m_g_pip->_Camera.UpdatePos(mVec3f(0, 0, -1));
 			}
 			if (key == 'r' || key == 'R') {//go into 
-				m_g_pip->_Camera.UpdatePos(mVec3f(0, 0, 5));
+				m_g_pip->_Camera.UpdatePos(mVec3f(0, 0, 1));
 			}
 			if (key == 'b' || key == 'B') {//go into 
 				if (pressed == 1)//only for key pressed
@@ -112,8 +113,11 @@ void Viewer::init_callbacks( ) {
 			if (key == 'n' || key == 'N') {//go into 
                 if (pressed == 1)//only for key pressed
                 {
-                    m_g_pip->TextureMode = (m_g_pip->TextureMode + 1) % 3;
-                    std::cout << "Texture Mode=" << m_g_pip->TextureMode << " texture channel=default.\n";
+					int activeTexCount = m_g_pip->getActiveTextureNumber();
+					m_objects->at(control_ob_id).texturechannelID= (m_objects->at(control_ob_id).texturechannelID+1)% (activeTexCount+2);
+					std::cout << "Texture channel=" << m_objects->at(control_ob_id).texturechannelID << ". Active texture channel= " << activeTexCount<<"\n";
+				
+
                 }
 
 			}
@@ -136,7 +140,7 @@ void Viewer::init_callbacks( ) {
 			{
 				if (button == BUTTON_R) {
 					ThisRot = eye(4);
-					m_objects->at(control_ob_id).ModleMatrix = ThisRot;
+					m_objects->at(control_ob_id).setModelMatrix(ThisRot);
 				}
 				else if (button == BUTTON_L)
 				{
@@ -153,11 +157,11 @@ void Viewer::init_callbacks( ) {
 					if (mouse_dragging) {
 						float x, y;
 						input_query_cursor(windowHandle, &x, &y);
-						cout << "mouseDragged: y=" << y - lastY << " x=" << x - lastX << " button=" << button << endl;
+						//cout << "mouseDragged: y=" << y - lastY << " x=" << x - lastX << " button=" << button << endl;
 						Op2 = mArcControl.GetArcBallPositionVector(x, y);
 						ThisRot = mArcControl.GetArcBallrotateMatrix(Op1, Op2);
 						ThisRot = ThisRot * LastRot;
-						m_objects->at(control_ob_id).ModleMatrix = ThisRot ;
+						m_objects->at(control_ob_id).setModelMatrix(ThisRot);
 					}
 			}
 			else
@@ -192,28 +196,40 @@ void Viewer::init_callbacks( ) {
 void Viewer::init_demo_scene() {
 	//init_land by marching cube
 	MarchingCubesDrawer tmp;
-	tmp.randomGenrateLandmass({ 32,32,5}, 0.1);
+	tmp.randomGenrateLandmass({ 32,64,5}, 0.02);
 
 	RenderableObject land;
 	land.BuildLikGLBegin(*tmp.getVertices(), *tmp.getNormals(), MeshBuildConvention::LIKE_GL_TRIANGLE);
-	land.ModleMatrix = scaleMatrix(30.0f) * rotateMatrix({1,0,0}, 90);
-	land.updateMaterial({ mVec3f(1.39,1.17,0) * 0.02, mVec3f(1.39,1.17,0) * 60, mVec3f(1.39,1.17,0) * 2,8 });
+	land.setModelMatrix(translateMatrix({ 45,8,0 })*scaleMatrix(65.0f) * rotateMatrix({ 1,0,0 }, 90)   );
+	land.updateMaterial({ mVec3f(1.39,0.69,0.19) * 0.0005, mVec3f(139,69,19)*0.05, mVec3f(139,69,19) ,8 });
+	land.fixit();
 
+	Cube lightBox;
+	lightBox.setModelMatrix(translateMatrix(InitLightPos) * scaleMatrix(2.0f) * rotateMatrix({ 0.45,0.45,0 }, 45)) ;
+	lightBox.texturechannelID = 3;
+	lightBox.fixit();
 
-
+	fs::path  Path_obj_beacon = m_projectRootDir / "assets" / AssetsNames[0];
 	fs::path  Path_obj = m_projectRootDir / "assets" / AssetsNames[1];
 	fs::path  Path_texture = m_projectRootDir / "assets" / AssetsNames[2];
-
+	fs::path  Path_texture_sky = m_projectRootDir / "assets" / AssetsNames[5];
 	m_objreader->readObjFile(Path_obj.string());
-	auto obj = RenderableObject(m_objreader->TrianglesIdx, m_objreader->Vertexes, m_objreader->VertexesNormal, m_objreader->VertexesTexture);
+	auto obj_crab = RenderableObject(m_objreader->TrianglesIdx, m_objreader->Vertexes, m_objreader->VertexesNormal, m_objreader->VertexesTexture);
+	obj_crab.updateMaterial({ mVec3f(0,0.69,0.99) * 0.005, mVec3f(0,69,99) * 0.5, mVec3f(0,69,99) ,8 });
+	m_objreader->clear();
+	m_objreader->readObjFile(Path_obj_beacon.string());
+	auto obj_beacon = RenderableObject(m_objreader->TrianglesIdx, m_objreader->Vertexes, m_objreader->VertexesNormal, m_objreader->VertexesTexture);
+	obj_beacon.setModelMatrix(translateMatrix({ -24.5,-48,-325 }));
 	/*m_objects->push_back(obj);
 	obj.ModleMatrix *= translateMatrix(mVec3f(50, -0, -0));*/
-
-	m_objects->push_back(std::move(obj));
+	m_objects->push_back(std::move(obj_crab));
+	//m_objects->push_back(std::move(obj_beacon));
+	//m_objects->push_back(std::move(lightBox));
+	//m_objects->push_back(std::move(land));
 
 	m_g_pip->LoadTexture(Path_texture);
+	m_g_pip->LoadTexture(Path_texture_sky);
 
-	m_objects->push_back(std::move(land));
 }
 
 
@@ -271,8 +287,8 @@ static auto string2wchars (std::string str, std::wstring& szDst) {
 void Viewer::pre_draw() {
 	static int a = 0;
 	float angle = Radians(a);
-	InitLightPos = { 125 * cos(angle) ,55 ,125 * sin(angle) };
-	a += 5;
+	InitLightPos = { 12.5f * cos(angle) ,25.0f ,12.5f * sin(angle) };
+	a += 2;
 	a = a % 360;
     m_framebuffer->framebuffer_fast_clear();
 }
@@ -283,10 +299,9 @@ void Viewer::post_draw() {
 
 void Viewer::draw(bool first) {
     pre_draw();
-    for (const auto& m_object: (* m_objects))
-    {
-        m_g_pip->Render(m_object, m_framebuffer.get());
-    }
+	
+    m_g_pip->Render(*m_objects, m_framebuffer.get());
+    
 
     window_draw_buffer(windowHandle, m_framebuffer.get());
     post_draw();

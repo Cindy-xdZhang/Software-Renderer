@@ -18,12 +18,15 @@ It consists of three independent systems.
 > + Implement soft shadows using distribution ray tracing
   
 ### 2.1 Software-implemented Graphics Pipeline
-> + Add triangle meshes support.(Support  xx.obj file )
-> + Camera Rotation: Arcball controls
-> + Pan moving and Zoom in Operation
+> + Support triangle meshes (Xxx.obj file ).
+> + Camera Rotation: mouse-Arcball controls.
+> + Camera moving and Zoom in Operation
 > + z-buffer technique;Multi-thread rasterization ;Gouraud shading/Phong shading;
-> + Procedural texture: stripe;Image texture.
-> + NOTE： perspective correct texture coordinates interpolation is implemnted, but the KAUST_beacon.obj doesn't give the correct texture coordinates, so I am using a parameterization with spherical coordinates.  
+> + Procedural texture: stripe.
+> + Image texture.
+> + Procedural landmass: marching cube to generate a random landmass.
+> Skybox (wip).
+> + Perspective correct interpolation. [NOTE： perspective correct texture coordinates interpolation is implemnted, but the KAUST_beacon.obj doesn't give the correct texture coordinates, so I am using a parameterization with spherical coordinates.  ]
 
 ### Manual
 > for  ray-tracing system First of all you need to use left button of mouse to click to select an object, once this object is selected, it’s color turns to purple, and later instruction all apply to this object. If you want cancel selection, click mid-button of your mouse. 
@@ -45,7 +48,7 @@ It consists of three independent systems.
 | Increase quality| press M to turn on/off supersampling and soft shadowing |
 #### 3.3 Graphics Pipeline system
 ![alt img-Graphics Pipeline](image/kaustbecon.png)
-
+![alt img-Graphics Pipeline](image/ssss.png)
 |Operation  | Instruction  | 
  | -----| ----- |
  |Camera |  Arcball controls by dragging your mouse/ Scroll your mouse to zoom in or out/ Press W, A, S, D and to Translate Camera|
@@ -53,16 +56,16 @@ It consists of three independent systems.
  | Textures| When in Phong shading mode,Press N to switch different Textures(stripe, Image)| 
  
 ### Environment 
-- Windows 10 + Visual Studio 2017;
-- OpenFrameworks v0.11.0;
-- Multi-thread Acceleration:  C++11 STL thread library is used; consider to refactor it using STL::excecution in later future. 
+- Windows 10/Linux;
+- OpenFrameworks v0.11.0(__latest version has remove this dependency and directly use operating system window API__);
+- c++ 17 or higher: STL thread library is used for multi-thread acceleration
 
 ### How to setup the code
 There are two ways to setup the code:
-> 0.cmakefile is provide.
-> 1. You can open the corresponding xxxx.sln in vs-studio-project folder (If you have openframeworks with visual studio this should work).
-> 2. Or you can create a new openframeworks project in visual studio, and add all the source files into your new project. All the source files are in the /vs-studio-project/assignment1-simple_raytracing/src directoty. 
-> 3. In the advanced ray tracing / graphics pipeline/ simple  ray tracing directories, there are xxx.exe that is possible to directly run on your computer and show you this work.  
+- 0.__Cmakefile__ is provide for linux. 
+- 1.On windows, You can open the corresponding xxxx.sln in vs-studio-project folder (If you have openframeworks with visual studio this should work).
+
+
 
 ### Reference & Miscs  
 - Kaust Beacon obj is provided by Tayyab Mubeen and is downloadable from: https://grabcad.com/library/kaust-beacon-1. For the purposes of this assignment it has been converted to an OBJ file format using the Meshlab software.

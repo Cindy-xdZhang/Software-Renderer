@@ -11,12 +11,13 @@ class Camera
 {
 private:
 
-	float fardistance{};
 	float yaw{};
 	float pitch{};
 	
+	float farPlane{};
+	float nearplane{};
 public:
-	float fov{};
+	float fov;
 	float r{};
 	float l{};
 	float b{};
@@ -38,8 +39,8 @@ public:
 	void Camera::UpdatePos(mVec3f z);
 	void Camera::UpdateFov(float fov);
 	//void Camera::UpdateTarget(mVec3f _position); 
-	Matrix4 Camera::genViewMat();
-	Matrix4 Camera::genPerspectiveMat();
+	Matrix4 Camera::genViewMat() const;
+	Matrix4 Camera::genPerspectiveMat() const;
 	//~Camera();
 };
 class ArcBallControler {

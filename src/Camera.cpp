@@ -18,7 +18,7 @@ Camera::Camera(mVec3f _position, mVec3f _front, mVec3f _up)
 	right.normalize();
 	
 	//nearPlane =  ( tan(fov * 0.5 *PI / 180)) ;
-	fov = 90.0f;
+	fov = 75.0f;
 	yaw = 90.0f;
 	pitch = 0;
 }
@@ -27,13 +27,14 @@ void Camera::UpdateFov(float dfov) {
 	 this->fov = dfov+ fov;
 	 if (this->fov > 160.0f) this->fov = 160.0f;
 	 if (this->fov < 12.50f)	this->fov = 12.50f;
-
+	 float FocalLength = abs(b) / tan(Radians((this->fov / 2)));
+	 this->nearplane = FocalLength;
 
 }
 //fov only for vertical direction
 void Camera::SetFrustm(float r, float l, float b, float t, float dfov, float farplane)
 {   
-	this->fardistance = farplane;
+	this->farPlane = farplane;
 	this->r = (r);
 	this->l = (l);
 	this->b=(b);
@@ -41,8 +42,11 @@ void Camera::SetFrustm(float r, float l, float b, float t, float dfov, float far
 	this->fov = dfov;
 	if (this->fov > 160.0f) this->fov = 160.0f;
 	if (this->fov < 12.50f)	this->fov = 12.50f;
-	
+	float FocalLength = abs(b) / tan(Radians((this->fov / 2)));
+	this->nearplane = FocalLength;
+
 }
+
 void Camera::UpdatePitchAngle(float dpitch) {
 	pitch += dpitch;
 	if (pitch > 89.0f)pitch = 89.0f;
@@ -60,6 +64,7 @@ void Camera::UpdatePitchAngle(float dpitch) {
 	//right = front.cross_product(up);
 	//right.normalize();
 }
+
 void Camera::UpdateYawAngle( float dyaw) {
 	yaw += dyaw;
 
@@ -78,14 +83,15 @@ void Camera::UpdatePos(mVec3f p) {
 }
 
 
-Matrix4 Camera::genViewMat() {
+Matrix4 Camera::genViewMat() const {
    return	ViewMatrix(this->position, front, up);
 }
 
-Matrix4 Camera::genPerspectiveMat() {
-	float Flength = abs(b) / tan(Radians((this->fov / 2)));
-	float n = ( Flength  * this->front.z);
-	float f = (fardistance * this->front.z);
+Matrix4 Camera::genPerspectiveMat() const{
+	assert(this->front.z==-1);
+	float n = (nearplane * this->front.z);
+	float f = (farPlane * this->front.z);
+
 	return	PerspectiveMatrix(r,l,t,b,n,f);
 }
 
@@ -127,11 +133,10 @@ Matrix4 ArcBallControler::GetArcBallrotateMatrix(mVec3f a, mVec3f b) const {
 }
 
 float Camera::getNearPlane() const {
-	float Flength = abs(b) / tan(Radians((this->fov / 2)));
-	return (Flength  * this->front.z);
+	return (nearplane  * -1);
 	
 }
 float Camera::getFarPlane() const {
-	return (fardistance * this->front.z);
+	return (farPlane * -1);
 
 }

@@ -19,4 +19,10 @@ public:
 	void readObjFile(const std::string& Filepath);
 	void OBjReader::Load_CalculateNormal_Store(std::string inputFilepath, std::string outputFilepath);
 	void OBjReader::Load_CalculateTextureCoordinate_Store(std::string inputFilepath, std::string outputFilepath);
+	inline void clear() {
+		Vertexes.clear();
+		VertexesNormal.clear();
+		VertexesTexture.clear();
+		TrianglesIdx.clear();
+	}
 };

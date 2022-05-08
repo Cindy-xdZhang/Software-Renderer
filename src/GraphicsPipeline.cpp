@@ -7,17 +7,20 @@
 #include <numeric>
 
 
-#define LI 200
+#define LI 100
 using namespace cimg_library;
 
 //#TODO: 
-//1.resize windows call_back; done
-//2.show fps on windows title? done
-// 3. marching cube for procedural land generation
-// 3.2 debug why scoll mouse change texture?
+// //0.0 depth buffer has problem when there are multiple objects!!!!!
+//0. use buffer remove one redundant perspective divide in vertex process 
+//1.resize windows call_back;       done
+//2.show fps on windows title?          done
+// 3. marching cube for procedural land generation.      done
+// 3.2 debug why scoll mouse change texture when use perspective divide?
 // 3.3 alpha blend
-//4.args to start ray-tracing or graphics pipeline
-// 4.1.Clip
+//4.parse args to start ray-tracing or graphics pipeline
+// 4.1.Clip done
+// 4.2 homospace clip
 //5.sky box
 //6.pbr ggx 
 //7.water surface
@@ -27,7 +30,7 @@ mVec3f InitLightPos = mVec3f(0, 10, 0);
 float texture_scaling = 100;
 
 static mVec3f LightSourceEyeSpace ;
-static mVec3f InitEyePos = mVec3f(0, 0, 20);
+static mVec3f InitEyePos = mVec3f(0, 10, 20);
 static mVec3f InitGazeDirection = mVec3f(0, 0, -1);
 static mVec3f InitTopDirection = mVec3f(0, 1, 0);
  //static std::map<std::string, unsigned int >bufferConvention={
@@ -69,12 +72,12 @@ static mVec3f InitTopDirection = mVec3f(0, 1, 0);
 
 void RenderableObject::BuildLikGLBegin(const std::vector<mVec3f>&vtxs,const std::vector<mVec3f>&normals, enum MeshBuildConvention Conv) {
 	 assert(Conv == MeshBuildConvention::LIKE_GL_TRIANGLE);
-	 Vertexes.clear();
-	 Vertexes.resize(vtxs.size());
-	 VertexesNormal.clear();
-	 VertexesNormal.resize(vtxs.size());
-	 std::copy(vtxs.begin(), vtxs.end(), Vertexes.begin());
-	 std::copy(normals.begin(), normals.end(), VertexesNormal.begin());
+	 Vertices.clear();
+	 Vertices.resize(vtxs.size());
+	 VtxNormals.clear();
+	 VtxNormals.resize(vtxs.size());
+	 std::copy(vtxs.begin(), vtxs.end(), Vertices.begin());
+	 std::copy(normals.begin(), normals.end(), VtxNormals.begin());
 
 	  TrianglesIdx.clear();
 	  int nTriangles = vtxs.size() / 3;
@@ -86,15 +89,6 @@ void RenderableObject::BuildLikGLBegin(const std::vector<mVec3f>&vtxs,const std:
 	 VtxTexUV=OBjReader::AssignTextureCoordinates(vtxs);
 
  }
-
-
-
-
-
-
-
-
-
 
 
 
@@ -150,13 +144,20 @@ void  GraphicsPipeline::LoadTexture(std::string stringPath) {
 }
 
 
-
-
-
 void GraphicsPipeline::VertexesProcess(const RenderableObject& yu) {
 
-	
-
+	const int N_VERTEX = yu.Vertices.size();
+	const int N_VERTEXNORMAL = yu.VtxNormals.size();
+	const int N_VERTEXUV= yu.VtxTexUV.size();
+	assert(N_VERTEX==N_VERTEXNORMAL&& N_VERTEX == N_VERTEXUV);
+	/*auto& vertex_coordinate_buffer = Buffers[0];
+	auto& vertex_normal_buffer = Buffers[1];
+	auto& vertex_shading_buffer = Buffers[3];
+	auto& vertex_EyeSpacePos_buffer = Buffers[4];
+	vertex_coordinate_buffer.reserve(N_VERTEX);
+	vertex_normal_buffer.reserve(N_VERTEX);
+	vertex_shading_buffer.reserve(N_VERTEX);
+	vertex_EyeSpacePos_buffer.reserve(N_VERTEX);*/
 	//-------------------------------
 	//**** Per-vertex Operation  ****
 	//Matrix4 P = squashMatrix(_Camera.getNearPlane(), _Camera.getFarPlane());
@@ -164,45 +165,45 @@ void GraphicsPipeline::VertexesProcess(const RenderableObject& yu) {
 	//Per=Ortho*P
 	//-------------------------------
 
-	Matrix4 M = yu.ModleMatrix;
+	Matrix4 M = yu.getModelMatrix();
 	Matrix4 V = _Camera.genViewMat();
-	Matrix4 Per = _Camera.genPerspectiveMat();
-	Matrix4 Vp = ViewPortMatrix(window_width, window_height);
 
 	Matrix4 ViewModel = ((V * M));
-	Matrix4 PersViewPort = (Vp * Per);
 	Matrix4 NoramlViewModel = inv(ViewModel).Transpose();
 
-	// apply  MVP projction +Pervertex lighting
 	mVec4f LightSourceHomo = V * mVec4f(InitLightPos, 1);
 	LightSourceEyeSpace = (LightSourceHomo/ LightSourceHomo.w).tomVec3();
 
 
-	int Vid = 0;
+
+
 	std::vector<vertex>TargetRenderVertexes;
-	TargetRenderVertexes.reserve(yu.Vertexes.size());
-	for (const mVec3f& Vertex : yu.Vertexes) {
+	TargetRenderVertexes.reserve(N_VERTEX);
+	int Vid = 0;
+
+	// apply  MV transformation +Pervertex lighting
+
+	for (const mVec3f& Vertex : yu.Vertices) {
 		//-------------------------------
 		//  Model + View  transformation
 		//-------------------------------
 		mVec4f EyeSpaceHomoCoordinates = (ViewModel * mVec4f(Vertex, 1));
 		mVec3f EyeSpaceCoordinates = EyeSpaceHomoCoordinates.HomoCordinates2InHomoVec3();
 
-		mVec3f vertex_normal = (NoramlViewModel * mVec4f(yu.VertexesNormal[Vid], 0)).tomVec3();
+		mVec3f vertex_normal = (NoramlViewModel * mVec4f(yu.VtxNormals[Vid], 0)).tomVec3();
 		//-------------------------------
 		//Pervertex  LightSource
 		//-------------------------------
-		mVec3f shading = ADSshading({0,0,0},LightSourceEyeSpace, EyeSpaceCoordinates, yu.VertexesNormal[Vid], yu.Material());
-		//-------------------------------
-		//Perpective + Viewport transformation
-	   //-------------------------------
-		mVec4f ScreenSpaceHomoCoordinates = (PersViewPort * EyeSpaceHomoCoordinates);
-		ScreenSpaceHomoCoordinates = ScreenSpaceHomoCoordinates / ScreenSpaceHomoCoordinates.w;
+		mVec3f shading = ADSshading({0,0,0},LightSourceEyeSpace, EyeSpaceCoordinates, vertex_normal, yu.Material());
+	
 
-
-		vertex tmp = { ScreenSpaceHomoCoordinates.tomVec3(),vertex_normal,shading, EyeSpaceHomoCoordinates.tomVec3(),yu.VtxTexUV[Vid] };
-		TargetRenderVertexes.emplace_back(tmp);
-		Vid++;
+		vertex tmp = { EyeSpaceHomoCoordinates.tomVec3(),vertex_normal,shading, yu.VtxTexUV[Vid] };
+		TargetRenderVertexes.push_back(std::move(tmp));
+		/*vertex_coordinate_buffer.emplace_back(ScreenSpaceInHomo);
+		vertex_normal_buffer.emplace_back(vertex_normal);
+		vertex_shading_buffer.emplace_back(shading);
+		vertex_EyeSpacePos_buffer.emplace_back(EyeSpaceCoordinates);
+		Vid++;*/
 
 	}
 
@@ -211,13 +212,28 @@ void GraphicsPipeline::VertexesProcess(const RenderableObject& yu) {
 	//-------------------------------
 	//primitives assembly
 	//-------------------------------
+	
 	TargetRenderTriangles.reserve(yu.TrianglesIdx.size());
 	for (auto idxs : yu.TrianglesIdx) {
-			TargetRenderTriangles.emplace_back(TriangleWithAttributes(TargetRenderVertexes[idxs.x], TargetRenderVertexes[idxs.y], TargetRenderVertexes[idxs.z]));
+			TargetRenderTriangles.emplace_back(TargetRenderVertexes[idxs.x], TargetRenderVertexes[idxs.y], TargetRenderVertexes[idxs.z]);
 	}
 	//# TODO: Clip
-
-
+	float alphaOver2 = Radians(_Camera.fov * 0.5);
+	float n = _Camera.getNearPlane();
+	float f = _Camera.getFarPlane();
+	Plane<float>Top = { mVec3f{ 0,0,0 }, mVec3f{0,std::cos(alphaOver2),std::sin(alphaOver2)}};
+	Plane<float>Bottom = { mVec3f{ 0,0,0 },mVec3f {0,-std::cos(alphaOver2),std::sin(alphaOver2)} };
+	Plane<float>Left= { mVec3f { 0,0,0 }, mVec3f{-std::cos(alphaOver2),0,std::sin(alphaOver2)} };
+	Plane<float>Right= { mVec3f{ 0,0,0 }, mVec3f{std::cos(alphaOver2),0,std::sin(alphaOver2)} };
+	Plane<float>Near= { mVec3f { 0,0,n }, mVec3f{0,0,1} };
+	Plane<float>Far= { mVec3f{ 0,0,f }, mVec3f{0,0,-1} };
+	
+	clip_with_plane(Near, TargetRenderTriangles, TargetRenderTriangles);
+	clip_with_plane(Top, TargetRenderTriangles, TargetRenderTriangles);
+	clip_with_plane(Bottom, TargetRenderTriangles, TargetRenderTriangles);
+	clip_with_plane(Left, TargetRenderTriangles, TargetRenderTriangles);
+	clip_with_plane(Right, TargetRenderTriangles, TargetRenderTriangles);
+	clip_with_plane(Far, TargetRenderTriangles, TargetRenderTriangles);
 
 }
 
@@ -233,7 +249,7 @@ static inline T PerspetiveCorrectDepth(T iaz, T ibz, T icz, T uv_u, T uv_v) {
 
 
 
-void GraphicsPipeline::Rasterization(const ShadingMaterial& myu, framebuffer_t* Fb) const
+void GraphicsPipeline::Rasterization( ShadingMaterial& myu, framebuffer_t* Fb, const unsigned int texChannel) const
 {
 	auto clamp = [](float in)->float {
 		return in > 1.0f ? 1.0f : (in < 0.0f ? 0.0f : in);
@@ -241,6 +257,11 @@ void GraphicsPipeline::Rasterization(const ShadingMaterial& myu, framebuffer_t* 
 	auto fract = [](float x)->float {
 		return x - floor(x);
 	};
+	const Matrix4 Per = _Camera.genPerspectiveMat();
+	const Matrix4 Vp = ViewPortMatrix(window_width, window_height);
+	const Matrix4 PersViewPort = (Vp * Per);
+
+
 	//after perspective ortho viewport z=n+f/n-f - 2*f*n/z(n-f)
 	float n = _Camera.getNearPlane();
 	float f = _Camera.getFarPlane();
@@ -255,17 +276,17 @@ void GraphicsPipeline::Rasterization(const ShadingMaterial& myu, framebuffer_t* 
 			//interpolate normal
 			mVec3f normal = Tri.vtxa.normal + ((Tri.vtxc.normal - Tri.vtxa.normal) * uv.x + (Tri.vtxb.normal - Tri.vtxa.normal) * uv.y);
 			normal.normalize();//normal in eyespace,light source in eyespace
-			mVec3f point = Tri.vtxa.EyeSpaceCoordinate * (1 - uv.x - uv.y) + (Tri.vtxc.EyeSpaceCoordinate * uv.x) + (Tri.vtxb.EyeSpaceCoordinate * uv.y);
+			mVec3f point = Tri.vtxa.Coordinate * (1 - uv.x - uv.y) + (Tri.vtxc.Coordinate * uv.x) + (Tri.vtxb.Coordinate * uv.y);
 			tmp = ADSshading({ 0,0,0 }, LightSourceEyeSpace,point, normal, myu);
 
 			//stripe texture
-			if (TextureMode== 1) {
+			if (texChannel == 1) {
 				mVec3f backcolor = { 0,0,0 };
 				float scale = texture_scaling;
 				float fuzz = 2;
 				float width = 10;
 				mVec2<float> Texcoords = Tri.vtxa.st + ((Tri.vtxc.st - Tri.vtxa.st) * uv.x + (Tri.vtxb.st - Tri.vtxa.st) * uv.y);
-				//	Texcoords = Texcoords * interpolateZ;
+				Texcoords = Texcoords * interpolateZ;
 				float scaleT = fract(Texcoords.y * scale);
 
 				float frac1 = clamp(scaleT / fuzz);
@@ -276,13 +297,13 @@ void GraphicsPipeline::Rasterization(const ShadingMaterial& myu, framebuffer_t* 
 				tmp = backcolor * (frac1)+tmp * (1 - frac1);
 
 			}
-			else if (TextureMode == 2) {
+			else if (texChannel >=2) {
 				float scale = texture_scaling;
 				mVec2<float> Texcoords = Tri.vtxa.st + ((Tri.vtxc.st - Tri.vtxa.st) * uv.x + (Tri.vtxb.st - Tri.vtxa.st) * uv.y);
 				Texcoords = Texcoords* interpolateZ;
 				Texcoords.x = fract(Texcoords.x * scale);
 				Texcoords.y = fract(Texcoords.y * scale);
-				mVec3f backcolor =LookupTexel(Texcoords, mTextures.size()-1);
+				mVec3f backcolor =LookupTexel(Texcoords, texChannel-2);
 				tmp = { backcolor.x * tmp.x,  backcolor.y * tmp.y, backcolor.z * tmp.z };
 				tmp.ColorClamp();
 			}
@@ -304,8 +325,6 @@ void GraphicsPipeline::Rasterization(const ShadingMaterial& myu, framebuffer_t* 
 	int TrianglesNumber = TargetRenderTriangles.size();
 
 	float* depthbuffer = Fb->depth_buffer;
-	assert(depthbuffer != NULL);
-	memset(depthbuffer, 0x7f, DEFAULT_WINDOW_HEIGHT * DEFAULT_WINDOW_WIDTH * sizeof(float));
 	std::mutex buffer_mutex;
 	//Rasterization
 	
@@ -331,7 +350,7 @@ void GraphicsPipeline::Rasterization(const ShadingMaterial& myu, framebuffer_t* 
 		{
 			//std::lock_guard<std::mutex> lock(buffer_mutex);
 			//look at -z direction, this depth is z in screen space 
-			if ( depthbuffer[ScreenXY.x * window_width + ScreenXY.y] >= TriFrag.depth) {
+			if ( depthbuffer[ScreenXY.x * window_width + ScreenXY.y] > TriFrag.depth) {
 				unsigned char fragColor[4] = { static_cast<unsigned char>(TriFrag.RGBv.x * 255),static_cast<unsigned char>(TriFrag.RGBv.y * 255),static_cast<unsigned char>(TriFrag.RGBv.z * 255),0 };
 				Fb->setvalue(ScreenXY.x, ScreenXY.y, fragColor);
 				//Fb->color_buffer[ScreenXY.y*w + ScreenXY.x] = TriFrag.RGB;
@@ -346,7 +365,15 @@ void GraphicsPipeline::Rasterization(const ShadingMaterial& myu, framebuffer_t* 
 		constexpr bool UseEarlyZ = true;
 
 
+		//TriWithAtrib store eyespace  coordinates
 		auto Tri = TriWithAtrib.GetTriangleVertexes();
+		//Perpective + Viewport transformation
+		//Tri will store screen space coordinates
+		Tri.a = (PersViewPort * mVec4f{ Tri.a,1.0 }).HomoCordinates2InHomoVec3();
+		Tri.b = (PersViewPort * mVec4f{ Tri.b,1.0 }).HomoCordinates2InHomoVec3();
+		Tri.c = (PersViewPort * mVec4f{ Tri.c,1.0 }).HomoCordinates2InHomoVec3();
+
+
 		int Xmin, Xmax, Ymin, Ymax;
 		Xmin = int(floorf(MIN(MIN(Tri.a.x, Tri.b.x), Tri.c.x)));
 		Xmax = int(ceilf(MAX(MAX(Tri.a.x, Tri.b.x), Tri.c.x)));
@@ -356,15 +383,11 @@ void GraphicsPipeline::Rasterization(const ShadingMaterial& myu, framebuffer_t* 
 		if (Ymin < 0 || Ymin >= window_height || Ymax < 0 || Ymax >= window_height)return;
 		if (Tri.a.z > 0 || Tri.b.z > 0 || Tri.c.z > 0)return;
 
-		//std::vector<fragment>RasterResult;
-		//RasterResult.reserve((Xmax - Xmin)* (Ymax - Ymin) * 8);
 
 		//early-z
-		const float iaz = 1.0f / (TriWithAtrib.vtxa.Coordinate.z - depthA);
-		const float ibz = 1.0f / (TriWithAtrib.vtxb.Coordinate.z - depthA);
-		const float icz = 1.0f / (TriWithAtrib.vtxc.Coordinate.z - depthA);
-
-
+		const float iaz = 1.0f / (Tri.a.z - depthA);
+		const float ibz = 1.0f / (Tri.b.z - depthA);
+		const float icz = 1.0f / (Tri.c.z - depthA);
 
 		mVec2<float>FirstTime;
 		mVec2<float>Incremental_uv;
@@ -376,8 +399,8 @@ void GraphicsPipeline::Rasterization(const ShadingMaterial& myu, framebuffer_t* 
 					mVec2<float>  uv = Tri.PointIsInTriangle(mVec3f(x, y, 0));
 					if (uv.x >= 0 && uv.y >= 0 && uv.x + uv.y <= 1) {
 						float interpolatez = PerspetiveCorrectDepth(iaz, ibz, icz, uv.x, uv.y);
-						if constexpr (UseEarlyZ)
-							if (!EarlyZtest(x, y, interpolatez))continue;
+						/*if constexpr (UseEarlyZ)
+							if (!EarlyZtest(x, y, interpolatez))continue;*/
 
 						mVec4f attibs = FramentShader(TriWithAtrib, uv, interpolatez);
 						//RasterResult.emplace_back(attibs.w, mVec2<int>{x, y }, attibs.tomVec3f());
@@ -393,8 +416,8 @@ void GraphicsPipeline::Rasterization(const ShadingMaterial& myu, framebuffer_t* 
 					if (uv.x >= 0 && uv.y >= 0 && uv.x + uv.y <= 1) {
 
 						float interpolatez = PerspetiveCorrectDepth(iaz, ibz, icz, uv.x, uv.y);
-						if constexpr (UseEarlyZ)
-							if (!EarlyZtest(x, y, interpolatez))continue;
+					/*	if constexpr (UseEarlyZ)
+							if (!EarlyZtest(x, y, interpolatez))continue;*/
 
 						mVec4f attibs = FramentShader(TriWithAtrib, uv, interpolatez);
 						//RasterResult.emplace_back(attibs.w ,mVec2<int>{x, y } ,attibs.tomVec3f());
@@ -409,8 +432,8 @@ void GraphicsPipeline::Rasterization(const ShadingMaterial& myu, framebuffer_t* 
 					if (uv.x >= 0 && uv.y >= 0 && uv.x + uv.y <= 1) {
 
 						float interpolatez = PerspetiveCorrectDepth(iaz, ibz, icz, uv.x, uv.y);
-						if constexpr (UseEarlyZ)
-							if (!EarlyZtest(x, y, interpolatez))continue;
+						/*if constexpr (UseEarlyZ)
+							if (!EarlyZtest(x, y, interpolatez))continue;*/
 
 						mVec4f attibs = FramentShader(TriWithAtrib, uv, interpolatez);
 						//RasterResult.emplace_back(attibs.w, mVec2<int>{x, y }, attibs.tomVec3f());
@@ -428,6 +451,8 @@ void GraphicsPipeline::Rasterization(const ShadingMaterial& myu, framebuffer_t* 
 
 	};
 
+
+
 //#define SingleThread
 #ifdef SingleThread
 	auto policy = std::execution::seq;
@@ -437,20 +462,26 @@ void GraphicsPipeline::Rasterization(const ShadingMaterial& myu, framebuffer_t* 
 	std::for_each(policy, TargetRenderTriangles.begin(), TargetRenderTriangles.end(), RasterAtriangle);
 
 
-
-
-
 	//interpolate
 }
 
-void GraphicsPipeline::Render(const RenderableObject& robj, framebuffer_t* Fb) {
+void GraphicsPipeline::Render(const std::vector<RenderableObject>& robjs, framebuffer_t* Fb) {
+	float* depthbuffer = Fb->depth_buffer;
+	assert(depthbuffer != NULL);
+	memset(depthbuffer, 0x7f, DEFAULT_WINDOW_HEIGHT * DEFAULT_WINDOW_WIDTH * sizeof(float));
+
+	for (const auto& r_object : robjs)
+	{
+		auto material = r_object.Material();
+		VertexesProcess(r_object);
+		Rasterization(material, Fb, r_object.texturechannelID);
+		//FragmentProcess(Fb);
+		clearPipeline();
+
+	}
+
 	
-	auto material = robj.Material();
-	VertexesProcess(robj);
-	Rasterization(material, Fb);
-	//FragmentProcess(Fb);
 	
-	clearPipeline();
 	
 }
 
@@ -469,7 +500,7 @@ GraphicsPipeline::GraphicsPipeline(int h, int w) : window_height(h), window_widt
 	Clip = false;
 	
 	_Camera = Camera(InitEyePos, InitGazeDirection, InitTopDirection);
-	_Camera.SetFrustm(1, -1, -1, 1, 90.0f, InitEyePos.z + 200);
+	_Camera.SetFrustm(1, -1, -1, 1, 90.0f, InitEyePos.z + 400);
 
 	//pre-allocate memory:
 	//FragmentsAfterRasterization.resize(4096);
@@ -478,28 +509,26 @@ GraphicsPipeline::GraphicsPipeline(int h, int w) : window_height(h), window_widt
 };
 
 
-
-
-#if 0
 void clip_with_plane(const Plane<float>& c_plane, std::vector<TriangleWithAttributes>& in_list,
 	std::vector<TriangleWithAttributes>& outer_list) {
-
+	std::vector<TriangleWithAttributes> tempOuterList;
+	tempOuterList.reserve(in_list.size());
 	for (auto& triangle : in_list) {
 		int in_vert_num = 0;
 		int previous_index, current_index;
-		mVec3f thisTriangleVertices[3] = {
-			triangle.vtxa.EyeSpaceCoordinate,
-			triangle.vtxb.EyeSpaceCoordinate,
-			triangle.vtxc.EyeSpaceCoordinate
+		vertex thisTriangleVertices[3] = {
+			triangle.vtxa,
+			triangle.vtxb,
+			triangle.vtxc
 		};
-		mVec4f remainPoints[4];
+		vertex remainPoints[4];
 		int remain_vert_num = 0;
 		for (int i = 0; i < 3; i++)
 		{
 			current_index = i;
 			previous_index = (i - 1 + 3) % 3;
-			mVec3f pre_vertex = thisTriangleVertices[previous_index]; //
-			mVec3f cur_vertex = thisTriangleVertices[current_index];  //
+			mVec3f pre_vertex = thisTriangleVertices[previous_index].Coordinate; //
+			mVec3f cur_vertex = thisTriangleVertices[current_index].Coordinate;  //
 
 			float d1 = c_plane.cal_project_distance(pre_vertex);
 			float d2 = c_plane.cal_project_distance(cur_vertex);
@@ -507,8 +536,13 @@ void clip_with_plane(const Plane<float>& c_plane, std::vector<TriangleWithAttrib
 			if (d1 * d2 < 0)
 			{
 				float t = c_plane.cal_intersectRatio(pre_vertex, cur_vertex);
-				mVec3f intersectionPostion = cur_vertex + pre_vertex * (1 - t);
-				remainPoints[remain_vert_num++] = { intersectionPostion ,t };
+				mVec3f interpolateCordinate= cur_vertex + pre_vertex * (1 - t);
+				//attributes
+				mVec3f interpolatenormal = thisTriangleVertices[current_index].normal + thisTriangleVertices[previous_index].normal * (1 - t);
+				mVec3f interpolateshading= thisTriangleVertices[current_index].shading + thisTriangleVertices[previous_index].shading * (1 - t);
+				mVec2f interpolateUV= thisTriangleVertices[current_index].st + thisTriangleVertices[previous_index].st * (1 - t);
+				mVec2<float> st;
+				remainPoints[remain_vert_num++] = { interpolateCordinate,interpolatenormal,interpolateshading,interpolateUV  };
 
 			}
 			if (d2 < 0)
@@ -517,28 +551,25 @@ void clip_with_plane(const Plane<float>& c_plane, std::vector<TriangleWithAttrib
 			}
 		}
 
-		//if (remain_vert_num == 3) {
-		//	TriangleWithAttributes
-		//	outer_list.emplace_back(Vertex4TriangleWithAttributes(remainPoints[0], remainPoints[1], remainPoints[2]));
+		if (remain_vert_num == 3) {
+			tempOuterList.emplace_back(triangle);
+		}
+		else	if (remain_vert_num == 4) {
+			TriangleWithAttributes newTriangle1 = { remainPoints[0],remainPoints[1],remainPoints[2] };
+			TriangleWithAttributes newTriangle2 = { remainPoints[2],remainPoints[1],remainPoints[3] };
+			tempOuterList.emplace_back(std::move(newTriangle1));
+			tempOuterList.emplace_back(std::move(newTriangle2));
 
-		//}
-		//else	if (remain_vert_num == 4) {
-		//	outer_list.emplace_back(Vertex4TriangleWithAttributes(remainPoints[0], remainPoints[1], remainPoints[2]));
-		//	outer_list.emplace_back(Vertex4TriangleWithAttributes(remainPoints[1], remainPoints[2], remainPoints[3]));
-		//}
-		//else if (remain_vert_num != 0) {
-		//	std::cout << "E: Unknown Error!";
-		//	return;
-		//}
+		}
+		else if (remain_vert_num != 0) {
+			std::cout << "E: Unknown Error!";
+			return;
+		}
 
 
 
 	}
 
-
+	std::swap(tempOuterList, outer_list);
 	return;
 }
-
-#endif
-
-

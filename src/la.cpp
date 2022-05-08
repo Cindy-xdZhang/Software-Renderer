@@ -1,7 +1,7 @@
 #include "la.h"
 
 template<typename T>
-mVec3<T> mVec4<T>::tomVec3(){
+mVec3<T> mVec4<T>::tomVec3() const{
 	return mVec3<T>(this->x, this->y, this->z);
 }
 template<typename T /*= float*/>
@@ -223,7 +223,7 @@ mVec3f Triangle::Normal() {
 template <typename T/*=float*/>
 T Plane<T>::cal_project_distance(mVec3<T> point) const
 {
-	return (point - this->ptx) * this.n;
+	return (point - this->ptx) * this->n;
 }
 template <typename T/*=float*/>
 T Plane<T>::cal_intersectRatio(mVec3f ptx1, mVec3f ptx2) const{
@@ -236,3 +236,5 @@ T Plane<T>::cal_intersectRatio(mVec3f ptx1, mVec3f ptx2) const{
  template mVec3<int>;
  template mVec3<float>;
  template mVec4<float>;
+
+ template Plane<float>;
