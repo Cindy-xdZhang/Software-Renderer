@@ -71,8 +71,8 @@ private:
     std::unique_ptr< OBjReader> m_objreader;
 
     std::unique_ptr< GraphicsPipeline> m_g_pip;
-    std::unique_ptr< std::vector<RenderableObject>> m_objects;
-
+    std::unique_ptr< std::vector<RenderableObject>> m_mutable_objects;
+    std::unique_ptr< std::vector<RenderableObject>> m_FixObjects;
 
     window_t* windowHandle=nullptr;
     //std::unordered_map<int, keycallbackFunctionType> mBindKeycallbacks;

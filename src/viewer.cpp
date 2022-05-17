@@ -20,13 +20,16 @@ static MyTimer timer;
 static bool mouse_dragging = false;
 static int control_ob_id= 0;
 extern mVec3f InitLightPos;
-extern float texture_scaling;
+
+static Cube lightbox;
+
 
 Viewer::Viewer() {
     m_framebuffer = std::make_unique<framebuffer_t>();
     m_objreader = std::make_unique<OBjReader>();
     m_g_pip = nullptr;
-    m_objects = make_unique<std::vector<RenderableObject>>();
+	m_mutable_objects = make_unique<std::vector<RenderableObject>>();
+	m_FixObjects = make_unique<std::vector<RenderableObject>>();
 }
 
 Viewer::~Viewer() {
@@ -84,32 +87,32 @@ void Viewer::init_callbacks( ) {
 					windowHandle->should_close=true;
 				}
 				if (key == 'D') {
-					if (shift_is_pressed) m_objects->at(control_ob_id).movePos(mVec3f(1, 0, 0));
+					if (shift_is_pressed) m_mutable_objects->at(control_ob_id).movePos(mVec3f(1, 0, 0));
 					else m_g_pip->_Camera.UpdatePos(mVec3f(1, 0, 0));
 				}
 				if (key == 'A') {
-					if (shift_is_pressed) m_objects->at(control_ob_id).movePos(mVec3f(-1, 0, 0));
+					if (shift_is_pressed) m_mutable_objects->at(control_ob_id).movePos(mVec3f(-1, 0, 0));
 					else m_g_pip->_Camera.UpdatePos(mVec3f(-1, 0, 0));
 				}
 				if ( key == 'S') {
-					if (shift_is_pressed) m_objects->at(control_ob_id).movePos(mVec3f(0, -1, 0));
+					if (shift_is_pressed) m_mutable_objects->at(control_ob_id).movePos(mVec3f(0, -1, 0));
 					else m_g_pip->_Camera.UpdatePos(mVec3f(0, -1, 0));
 				}
 				if ( key == 'W') {
-					if (shift_is_pressed) m_objects->at(control_ob_id).movePos(mVec3f(0, 1, 0));
+					if (shift_is_pressed) m_mutable_objects->at(control_ob_id).movePos(mVec3f(0, 1, 0));
 					else m_g_pip->_Camera.UpdatePos(mVec3f(0, 1, 0));
 				}
 				if (key == 'Q') {
-					if (shift_is_pressed) m_objects->at(control_ob_id).movePos(mVec3f(0, 0, -1));
+					if (shift_is_pressed) m_mutable_objects->at(control_ob_id).movePos(mVec3f(0, 0, -1));
 					else m_g_pip->_Camera.UpdatePos(mVec3f(0, 0, -1));
 				}
 				if ( key == 'E') {//go outside 
-					if (shift_is_pressed) m_objects->at(control_ob_id).movePos(mVec3f(0, 0, 1));
+					if (shift_is_pressed) m_mutable_objects->at(control_ob_id).movePos(mVec3f(0, 0, 1));
 					else m_g_pip->_Camera.UpdatePos(mVec3f(0, 0, 1));
 				}
 				if ( key == 'R') {//go into 
-					if (shift_is_pressed) m_objects->at(control_ob_id).setModelMatrix(eye(4)); 
-					else 	control_ob_id = (control_ob_id + 1) % (m_objects->size());
+					if (shift_is_pressed) m_mutable_objects->at(control_ob_id).setModelMatrix(eye(4));
+					else 	control_ob_id = (control_ob_id + 1) % (m_mutable_objects->size());
 
 				}	
 				if (key == 'C'&& shift_is_pressed) {//go into 
@@ -134,7 +137,7 @@ void Viewer::init_callbacks( ) {
 
 				if (key == 'K' || key == 'k') {//go into 
 					if (pressed == 1)//only for key pressed
-						texture_scaling *= 0.5f;
+						m_mutable_objects->at(control_ob_id).texture_scaling *= 0.5f;
 				}
 				if (key == 'b' || key == 'B') {//go into 
 					if (pressed == 1)//only for key pressed
@@ -142,13 +145,13 @@ void Viewer::init_callbacks( ) {
 				}
 				if (key == 'l' || key == 'L') {//go into 
 					if (pressed == 1)//only for key pressed
-						texture_scaling *= 2;
+						m_mutable_objects->at(control_ob_id).texture_scaling *= 2;
 				}
 				//next texture mode
 				if (key == 'n' || key == 'N') {//go into 
 					int activeTexCount = m_g_pip->getActiveTextureNumber();
-					m_objects->at(control_ob_id).texturechannelID = (m_objects->at(control_ob_id).texturechannelID + 1) % (activeTexCount + 2);
-					std::cout << "Texture channel=" << m_objects->at(control_ob_id).texturechannelID << ". Active texture channel= " << activeTexCount << "\n";
+					m_mutable_objects->at(control_ob_id).texturechannelID = (m_mutable_objects->at(control_ob_id).texturechannelID + 1) % (activeTexCount + 2);
+					std::cout << "Texture channel=" << m_mutable_objects->at(control_ob_id).texturechannelID << ". Active texture channel= " << activeTexCount << "\n";
 				}
 
 
@@ -200,8 +203,8 @@ void Viewer::init_callbacks( ) {
 						ThisRot = mArcControl.GetArcBallrotateMatrix(Op1, Op2);
 						Op1 = Op2;
 						ThisRot = ThisRot * LastRot;
-						auto preModelMat = m_objects->at(control_ob_id).getModelMatrix();
-						m_objects->at(control_ob_id).setModelMatrix(preModelMat* ThisRot);
+						auto preModelMat = m_mutable_objects->at(control_ob_id).getModelMatrix();
+						m_mutable_objects->at(control_ob_id).setModelMatrix(preModelMat* ThisRot);
 						
 					}
 			}
@@ -239,7 +242,7 @@ void Viewer::init_callbacks( ) {
 void Viewer::init_demo_scene() {
 	//init_land by marching cube
 	MarchingCubesDrawer tmp;
-	tmp.randomGenrateLandmass({ 256,6,256 }, 0.1);
+	tmp.randomGenrateLandmass({ 256,6,256 }, 0.25);
 
 	RenderableObject land;
 	land.BuildLikGLBegin(*tmp.getVertices(), *tmp.getNormals(), MeshBuildConvention::LIKE_GL_TRIANGLE);
@@ -249,12 +252,16 @@ void Viewer::init_demo_scene() {
 	Cube origin;
 	land.setModelMatrix(scaleMatrix(0.25f));
 	origin.fixit();
+	Cube skybox;
+	skybox.setModelMatrix(scaleMatrix(620.0f));
+	skybox.texturechannelID = 3;
 
-	Cube lightBox;
-	lightBox.setModelMatrix(translateMatrix(InitLightPos) * scaleMatrix(0.5f) * rotateMatrix({ 0.45,0.45,0 }, 45)) ;
-	lightBox.texturechannelID = 3;
-	
+	skybox.fixit();
+	m_FixObjects->push_back(std::move(skybox));
+	m_FixObjects->push_back(std::move(origin));
+	m_FixObjects->push_back(std::move(land));
 
+	lightbox.updateMaterial({ mVec3f(2,1,1) * 0.005, mVec3f(2,1,1) * 0.0001, mVec3f(0) ,8 });
 
 	fs::path  Path_obj_beacon = m_projectRootDir / "assets" / AssetsNames[0];
 	fs::path  Path_obj = m_projectRootDir / "assets" / AssetsNames[1];
@@ -262,21 +269,17 @@ void Viewer::init_demo_scene() {
 	fs::path  Path_texture_sky = m_projectRootDir / "assets" / AssetsNames[5];
 	m_objreader->readObjFile(Path_obj.string());
 	auto obj_crab = RenderableObject(m_objreader->TrianglesIdx, m_objreader->Vertexes, m_objreader->VertexesNormal, m_objreader->VertexesTexture);
-	obj_crab.updateMaterial({ mVec3f(0,0.69,0.99) * 0.005, mVec3f(0,69,99) * 2, mVec3f(0,69,99) ,8 });
 	m_objreader->clear();
 	m_objreader->readObjFile(Path_obj_beacon.string());
 	auto obj_beacon = RenderableObject(m_objreader->TrianglesIdx, m_objreader->Vertexes, m_objreader->VertexesNormal, m_objreader->VertexesTexture);
+	obj_beacon.updateMaterial({ mVec3f(0,0.69,0.99) * 0.005, mVec3f(0,69,99) * 2, mVec3f(0,69,99) ,8 });
+	obj_crab.updateMaterial({ mVec3f(1,0.69,0.99) * 0.005, mVec3f(1,0.5,0.99) * 2, mVec3f(0.1,0.2,0.2) ,8 });
 	obj_beacon.setModelMatrix(translateMatrix({ -55,-45,-395 }));
 	/*m_objects->push_back(obj);
 	obj.ModleMatrix *= translateMatrix(mVec3f(50, -0, -0));*/
-	//m_objects->push_back(std::move(origin));
-	//m_objects->push_back(std::move(obj_crab));
-	//m_objects->push_back(std::move(obj_beacon));
-	//m_objects->push_back(lightBox);
-	lightBox.setModelMatrix(translateMatrix({-8,-1,-3}) * scaleMatrix(4.0f) * rotateMatrix({ 0.45,0.45,0 }, 45));
-	//lightBox.fixit();
-	//m_objects->push_back(std::move(lightBox));
-	m_objects->push_back(std::move(land));
+
+	m_mutable_objects->push_back(std::move(obj_crab));
+	m_mutable_objects->push_back(std::move(obj_beacon));
 
 	m_g_pip->LoadTexture(Path_texture);
 	m_g_pip->LoadTexture(Path_texture_sky);
@@ -339,20 +342,22 @@ static auto string2wchars (std::string str, std::wstring& szDst) {
 void Viewer::pre_draw() {
 	static int a = 0;
 	float angle = Radians(a);
-	InitLightPos = { 0.125f * cos(angle) ,InitLightPos.y ,0.125f * sin(angle) };
+	InitLightPos = {  cos(angle) ,InitLightPos.y ,sin(angle)+5 };
+	lightbox.setModelMatrix(translateMatrix(InitLightPos) * scaleMatrix(0.2f) * rotateMatrix({ 0.45,0.45,0 }, 45));
 	a += 1;
 	a = a % 360;
     m_framebuffer->framebuffer_fast_clear();
+	m_FixObjects->push_back(lightbox);
 }
 
 void Viewer::post_draw() {
-
+	m_FixObjects->pop_back();
 }
 
 void Viewer::draw(bool first) {
     pre_draw();
 	
-    m_g_pip->Render(*m_objects, m_framebuffer.get());
+    m_g_pip->Render(*m_FixObjects,*m_mutable_objects, m_framebuffer.get());
     
     window_draw_buffer(windowHandle, m_framebuffer.get());
     post_draw();

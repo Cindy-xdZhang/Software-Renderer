@@ -94,6 +94,7 @@ private:
 	bool fixObject = false;
 	Matrix4 ModleMatrix;
 public:
+	float texture_scaling = 1;
 	unsigned int texturechannelID = 0;//{0-no texture, 1 :procedual strip, 2,3,...:real textures}
 	
 	std::vector<mVec3i> TrianglesIdx;
@@ -333,8 +334,8 @@ public:
 	}
 
 
-	void Render(const std::vector<RenderableObject>& robj, framebuffer_t* Fb);
 
+	void Render(const std::vector<RenderableObject>& robjs1, const std::vector<RenderableObject>& robjs2, framebuffer_t* Fb);
 	inline int getActiveTextureNumber() {
 		return mTextures.size() ;
 	}
@@ -343,10 +344,8 @@ private:
 	std::vector<Texture>mTextures;
 
     STRONG_INLINE  void VertexesProcess(const RenderableObject& yu);
-	STRONG_INLINE void Rasterization(ShadingMaterial& myu, framebuffer_t* Fb, const unsigned int texChannel) const;
-	//inline void FragmentProcess(framebuffer_t* Fb);
-
-
+	STRONG_INLINE  void Rasterization(const RenderableObject& robj, framebuffer_t* Fb) const;
+	STRONG_INLINE mVec4f FragmentShading(const Triangle& TriInEyeSpace, const mVec3i& TriIdx, const mVec2<float>& uv, float interpolateZ, const RenderableObject& robj)const;
 	float* depthbuffer = NULL;
 
 

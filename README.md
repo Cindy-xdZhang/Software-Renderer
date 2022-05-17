@@ -1,9 +1,26 @@
 # Software-Renderer
- This is a Software implemented graphics pipeline/ray-tracing system, based on c++(14) and openframework.
+ This is a Software implemented graphics pipeline/ray-tracing system, based on c++ (17) and openframework.
 
 It consists of three independent systems.
- [todo: get rid of openframework library.] 
- 
+### 0. Software Renderer-C++ implemented Graphics Pipeline
+> + Load & store  triangle obj meshes (xxx.obj file ), compute per-vertex/ per-face normal if needed.
+> + Camera Rotation, Pan moving, Zoom in & Out .
+> + Object moving & roation: Arcball controls.
+> + Early-Z & Z-buffer technique; Multi-thread rasterization; Gouraud shading/Phong shading;
+> + Image texture & Procedural texture: stripe.
+> + Procedural landmass: marching cube to generate a random landmass.
+> + Skybox.
+> + Perspective correct interpolation. 
+
+![alt img-Graphics Pipeline](image/kaustbecon.png)
+![alt img-Graphics Pipeline](image/demo1.png)
+
+|Operation  | Instruction | 
+| -----| ----- |
+| Objects Select |Press R will change the mutable object that is selected. |
+| Objects transformation | Keep Shift Pressed to enable model transformation.  Press W, A, S, D and Q, E to Translate in x, y, z direction. Arc-ball rotation with right mouse.Press R(shift+R) to reset its postion. |
+|Camera motion | Press W, A, S, D and Q, E to Translate Camera in x, y, z direction. Press Y, U, O, P to rotate in pitch and yaw direction of the camera. |
+
 ### 1.1 Implicit surface ray-tracing system  
 > + Model transformation:Rotation, Scale, Translate in x, y, z direction, Reset Object position
 > + Camera transformation: movement, zoom in zoom out
@@ -17,47 +34,27 @@ It consists of three independent systems.
 > + Implement antialiasing using distribution ray tracing with the stratified super sampling technique.
 > + Implement soft shadows using distribution ray tracing
   
-### 2.1 Software-implemented Graphics Pipeline
-> + Support triangle meshes (Xxx.obj file ).
-> + Camera Rotation: mouse-Arcball controls.
-> + Camera moving and Zoom in Operation
-> + z-buffer technique;Multi-thread rasterization ;Gouraud shading/Phong shading;
-> + Procedural texture: stripe.
-> + Image texture.
-> + Procedural landmass: marching cube to generate a random landmass.
-> Skybox (wip).
-> + Perspective correct interpolation. [NOTE： perspective correct texture coordinates interpolation is implemnted, but the KAUST_beacon.obj doesn't give the correct texture coordinates, so I am using a parameterization with spherical coordinates.  ]
+
 
 ### Manual
 > for  ray-tracing system First of all you need to use left button of mouse to click to select an object, once this object is selected, it’s color turns to purple, and later instruction all apply to this object. If you want cancel selection, click mid-button of your mouse. 
 #### 3.1 Implicit surface ray-tracing ray-tracing system
 ![alt img-adrt](image/adrt.png)
 
-|Operation  | Instruction  | 
-| -----| ----- |
-| Objects transformation | Press W, A, S, D and U, J to Translate in x, y, z direction.Press X, Y, Z to Rotation in x, y, z direction. Press R to reset its postion.Press ctrl and into the scale mode, then Press X,Y,Z to Scale in x, y, z direction.(If you want to rotate object now,you need press ctrl to switch back to rotation control mode.)|
-|Camera motion |  Press UP, DOWN, LEFT, RIGHT and PAGE_UP, PAGE_DOWN to Translate Camera in x, y, z direction.Press F1 and into the Camera rotation mode, then Press W, A, S, D to rotate in pitch and yaw direction.(If you want to control object motion now, you need press F1 to switch back to object motion control mode.)    |
-| Animation  |Press v to start Animation or Click right button of mouse to stop animation  |
-#### 3.2 Advanced ray-tracing system
+
+#### 3.2 Mesh ray-tracing system
 ![alt img-adrt](image/mmexport1608450429775.jpg)
 
 |Operation  | Instruction  | 
 | -----| ----- |
-|Objects transformation|The TriangleMesh ray-tracing system will change object who is selected one by one, but not as  simple ray-tracing system that you can use mouse to click any object to select that object.Instruction Keys are the same as Simple ray-tracing system|  
-| Load/Store 	Models matrix| You can load several Objects into a scene, after you place them well, press F2 to store their model matixes, and you can use F3 to load models'model matixes any time you want. |
-| Increase quality| press M to turn on/off supersampling and soft shadowing |
-#### 3.3 Graphics Pipeline system
-![alt img-Graphics Pipeline](image/kaustbecon.png)
-![alt img-Graphics Pipeline](image/ssss.png)
-|Operation  | Instruction  | 
- | -----| ----- |
- |Camera |  Arcball controls by dragging your mouse/ Scroll your mouse to zoom in or out/ Press W, A, S, D and to Translate Camera|
- | Shading|Press B to switch between Phong shading and Gouraud shading| 
- | Textures| When in Phong shading mode,Press N to switch different Textures(stripe, Image)| 
+|Objects transformation| Unfinished |  
+| Load/Store 	Models matrix| Unfinished |
+| Increase quality| Unfinished |
+
  
 ### Environment 
 - Windows 10/Linux;
-- OpenFrameworks v0.11.0(__latest version has remove this dependency and directly use operating system window API__);
+- OpenFrameworks v0.11.0( __latest version has remove this dependency and directly use operating system window API__);
 - c++ 17 or higher: STL thread library is used for multi-thread acceleration
 
 ### How to setup the code
