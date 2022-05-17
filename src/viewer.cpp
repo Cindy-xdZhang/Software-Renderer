@@ -79,7 +79,10 @@ void Viewer::init_callbacks( ) {
 				if (key == unsigned char(16)) {
 					shift_is_pressed = true;
 				}
-
+				if (key == unsigned char(27)) {
+					//press esc to close
+					windowHandle->should_close=true;
+				}
 				if (key == 'D') {
 					if (shift_is_pressed) m_objects->at(control_ob_id).movePos(mVec3f(1, 0, 0));
 					else m_g_pip->_Camera.UpdatePos(mVec3f(1, 0, 0));
@@ -236,14 +239,17 @@ void Viewer::init_callbacks( ) {
 void Viewer::init_demo_scene() {
 	//init_land by marching cube
 	MarchingCubesDrawer tmp;
-	tmp.randomGenrateLandmass({ 64,64,5}, 0.1);
+	tmp.randomGenrateLandmass({ 256,6,256 }, 0.1);
 
 	RenderableObject land;
 	land.BuildLikGLBegin(*tmp.getVertices(), *tmp.getNormals(), MeshBuildConvention::LIKE_GL_TRIANGLE);
-	land.setModelMatrix(translateMatrix({ 45,8,0 })*scaleMatrix(65.0f) * rotateMatrix({ 1,0,0 }, 90)   );
-	land.updateMaterial({ mVec3f(1.39,0.69,0.19) * 0.005, mVec3f(139,69,19)*0.01, mVec3f(139,69,19)*0.01 ,8 });
+	land.setModelMatrix(translateMatrix({240,0,0}) * scaleMatrix(480.0f,120.0f,240.0f));
+	land.updateMaterial({ mVec3f(1.39,0.69,0.19) * 0.001, mVec3f(139,69,19)*0.002, mVec3f(0.0f) ,8 });
+	land.fixit();
 	Cube origin;
+	land.setModelMatrix(scaleMatrix(0.25f));
 	origin.fixit();
+
 	Cube lightBox;
 	lightBox.setModelMatrix(translateMatrix(InitLightPos) * scaleMatrix(0.5f) * rotateMatrix({ 0.45,0.45,0 }, 45)) ;
 	lightBox.texturechannelID = 3;
@@ -263,9 +269,9 @@ void Viewer::init_demo_scene() {
 	obj_beacon.setModelMatrix(translateMatrix({ -55,-45,-395 }));
 	/*m_objects->push_back(obj);
 	obj.ModleMatrix *= translateMatrix(mVec3f(50, -0, -0));*/
-	m_objects->push_back(std::move(origin));
-	m_objects->push_back(std::move(obj_crab));
-	m_objects->push_back(std::move(obj_beacon));
+	//m_objects->push_back(std::move(origin));
+	//m_objects->push_back(std::move(obj_crab));
+	//m_objects->push_back(std::move(obj_beacon));
 	//m_objects->push_back(lightBox);
 	lightBox.setModelMatrix(translateMatrix({-8,-1,-3}) * scaleMatrix(4.0f) * rotateMatrix({ 0.45,0.45,0 }, 45));
 	//lightBox.fixit();
@@ -348,7 +354,6 @@ void Viewer::draw(bool first) {
 	
     m_g_pip->Render(*m_objects, m_framebuffer.get());
     
-
     window_draw_buffer(windowHandle, m_framebuffer.get());
     post_draw();
 }

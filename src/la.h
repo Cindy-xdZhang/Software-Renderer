@@ -60,7 +60,14 @@ public:
 		return sqrt(sum);
 
 	}
+	T getSquareNorm()const {
+		T sum = 0.0;
+		sum += x * x;
+		sum += y * y;
+		sum += z * z;
+		return (sum);
 
+	}
 	mVec3(mVec3 A, mVec3 B);
 	mVec3(T  a, T  b, T  c);
 	STRONG_INLINE mVec3(mVec3&& other)noexcept :x(other.x), y(other.y),z(other.z) {
@@ -75,7 +82,7 @@ public:
 	};
 
 	mVec3()=default;
-	STRONG_INLINE mVec3(T d);
+	STRONG_INLINE explicit mVec3(T d) ;
 	~mVec3() = default;
 	STRONG_INLINE mVec3 operator +(const mVec3& right) const;
 	STRONG_INLINE void operator +=(const mVec3& right);
@@ -148,13 +155,13 @@ public:
 	}
 
 	mVec3<T> tomVec3()const;
-	STRONG_INLINE	mVec3<T> HomoCordinates2InHomoVec3();
+	STRONG_INLINE	mVec3<T> HomoCordinates2InHomoVec3() const;
 	//mVec4(mVec4 A, mVec4 B);
 	mVec4(mVec4<T>A, mVec4<T> B);
 
-	mVec4(float a, float b, float c, float cd);
+	mVec4(T  a, T  b,  T c, T cd);
 	mVec4();
-	mVec4(float d);
+	explicit mVec4(T  d);
 	mVec4(mVec3<T> r, float w);
 	~mVec4();
 	mVec4 operator +(const mVec4& right) const;

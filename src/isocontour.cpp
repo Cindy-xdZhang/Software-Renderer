@@ -1,7 +1,10 @@
+#include <execution>
 #include "isocontour.h"
 #include<assert.h>
 #include <random>
-
+#include <cmath>
+#include <numeric>
+#include <algorithm>
 double Epsilon = 0.001;
 
 
@@ -324,7 +327,6 @@ void MarchingCubesDrawer::randomGeneratVolumeData(double Noise, mVec3i GridXYZ) 
 //procedual landmass generation
 void MarchingCubesDrawer::randomGenrateLandmass(mVec3i GridXYZ, double Noise) {
 
-	constexpr double iso_value = 20;
 	//randomGeneratVolumeData( Noise, GridXYZ);
 	dimx = GridXYZ.x;
 	dimy = GridXYZ.y;
@@ -332,33 +334,53 @@ void MarchingCubesDrawer::randomGenrateLandmass(mVec3i GridXYZ, double Noise) {
 	assert(dimz > 0 && dimx > 0 && dimy > 0);
 	this->volumeData = new double[dimx * dimy * dimz];
 	assert(volumeData);
-	memset(volumeData,0, dimx * dimy * dimz*sizeof(float));
+	//memset(volumeData,0, dimx * dimy * dimz*sizeof(double));
 
-	std::uniform_real_distribution<double>r(-1, 1);
-	std::default_random_engine e(time(NULL));
-	std::seed_seq seed2{ r(e), r(e), r(e), r(e), r(e), r(e), r(e), r(e) };
-	std::mt19937 e2(seed2);
-	std::normal_distribution<> normal_dist(0, Noise * Noise);
 
-	constexpr int MainLandZ0 = 1;
-	constexpr int MainLandZ1 = 2;
-	constexpr int MainLandZ2 = 3;
+	std::vector<int> indexZs;
+	indexZs.resize(dimz);
+	std::iota(indexZs.begin(), indexZs.end(),0);
+	const double land_iso_value = static_cast<double>((dimy) / 2.0)-0.1;
+	const double NoiseMagnitude = 0.01;
+#ifdef SingleThread
+	auto policy = std::execution::seq;
+#else
+	auto policy = std::execution::par_unseq;
+#endif
+	std::for_each(policy, indexZs.begin(), indexZs.end(), [this, Noise, NoiseMagnitude,land_iso_value](int z) {
+		std::random_device rd{};
+		std::mt19937 e2(rd());
+		std::normal_distribution<> normal_dist(-0.1, Noise);
+		for (int y = 0; y < dimy; y++) {
+			for (int x = 0; x < dimx; x++) {
+				unsigned int flatindex = x + (y * dimx) + (z * dimy * dimx);
+				volumeData[flatindex] =y- land_iso_value;
+				volumeData[flatindex] += NoiseMagnitude *normal_dist(e2);
+				if (flatindex %4)
+				{
+					volumeData[flatindex] += NoiseMagnitude *2 * normal_dist(e2);
+				}
+				if (flatindex % 8)
+				{
+					volumeData[flatindex] += NoiseMagnitude *4 * normal_dist(e2);
+				}
+				if (flatindex % 16)
+				{
+					volumeData[flatindex] += NoiseMagnitude *8 * normal_dist(e2);
+				}
 
-	assert(MainLandZ2 <GridXYZ.z-1);
-	for (int y = 0; y < dimy; y++) {
-		for (int x = 0; x < dimx; x++) {
-			double randomV = normal_dist(e2);
-			int thisz = MainLandZ1;
-			if (randomV > 0.2) thisz= MainLandZ2;
-			if (randomV <- 0.2) thisz = MainLandZ1;
+				if (flatindex % 32)
+				{
+					volumeData[flatindex] += NoiseMagnitude * 16 * normal_dist(e2);
+				}
 			
-			int flatindex = x + (y * dimx) + (thisz* dimy * dimx);
-			this->volumeData[flatindex] += iso_value;
+			}
 		}
-	}
+		}
+	);
 
 
-	MeshBuiding_MarchingCubes(iso_value);
+	MeshBuiding_MarchingCubes(0);
 
 }
 
@@ -412,10 +434,10 @@ bool MarchingCubesDrawer::SetScalarFieldData(int dimx, int dimy, int dimz, unsig
 	}
 }
 
-double MarchingCubesDrawer::Griddata(int x, int y, int z) {
-	x = x <= -1 ? 0 : x >= this->dimx ? x - 1 : x;
-	y = y <= -1 ? 0 : y >= this->dimy ? y - 1 : y;
-	z = z <= -1 ? 0 : z >= this->dimz ? z - 1 : z;
+inline double MarchingCubesDrawer::Griddata(int x, int y, int z) {
+	x = x <= -1 ? 0 : x >= this->dimx ? this->dimx - 1 : x;
+	y = y <= -1 ? 0 : y >= this->dimy ? this->dimy - 1 : y;
+	z = z <= -1 ? 0 : z >= this->dimz ? this->dimz - 1 : z;
 	int flatindex = x + (y * dimx) + (z * dimy * dimx);
 	return	this->volumeData[flatindex];
 }
@@ -462,7 +484,7 @@ void MarchingCubesDrawer::MeshBuiding_MarchingCubes(const double iso_value) {
 				Vertex p[8];
 				double Scalarval[8];
 				uint8_t cubeIndex = 0;
-				//get cube data
+				//get cube data and coding  this cube
 				for (uint8_t i = 0; i < 8; i++) {
 					p[i].x = x + VertexInCubeCoordinatesOffset[i].x;
 					p[i].y = y + VertexInCubeCoordinatesOffset[i].y;
@@ -482,6 +504,7 @@ void MarchingCubesDrawer::MeshBuiding_MarchingCubes(const double iso_value) {
 
 					uint16_t bit = 1u << i;
 
+					//notice: if cubebit is 00000000 or 11111111 (totally outside/inside the iso-surface, then no trianlges are drawn.)
 					if (edgeTable3D[cubeIndex] & bit) {
 						// if this edge has contour on it: edgeTable3D is a a list, using cubeIndex,
 						//e.g. if an element of edgeTable3D  is like 0000 0000 1000 0001:means the 0 edge, 7-th edge has contour

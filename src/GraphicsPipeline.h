@@ -342,20 +342,28 @@ public:
 private:
 	std::vector<Texture>mTextures;
 
-	STRONG_INLINE  void VertexesProcess(const RenderableObject& yu);
+    STRONG_INLINE  void VertexesProcess(const RenderableObject& yu);
 	STRONG_INLINE void Rasterization(ShadingMaterial& myu, framebuffer_t* Fb, const unsigned int texChannel) const;
 	//inline void FragmentProcess(framebuffer_t* Fb);
 
 
 	float* depthbuffer = NULL;
 
-	std::vector<mVec3f> Buffers[MAXIMUM_GPIPELINE_BUFFERS];
+
+	
+
+	std::vector<mVec3f> vec3Buffers[MAXIMUM_GPIPELINE_BUFFERS];
+	std::vector<mVec4f> vec4Buffers[MAXIMUM_GPIPELINE_BUFFERS];
+	std::vector<mVec3i> vec3iBuffer;
+	std::vector<mVec2f> vec2Buffer;
+
 	std::vector<TriangleWithAttributes>TargetRenderTriangles;
 
+	void clip_with_plane(const Plane<float>& c_plane);
 
 };
 
-void clip_with_plane(const Plane<float>& c_plane, std::vector<TriangleWithAttributes>& in_list, std::vector<TriangleWithAttributes>& outer_list);
+
 
 
 

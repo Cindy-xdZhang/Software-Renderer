@@ -5,7 +5,7 @@ mVec3<T> mVec4<T>::tomVec3() const{
 	return mVec3<T>(this->x, this->y, this->z);
 }
 template<typename T /*= float*/>
- mVec3<T> mVec4<T>::HomoCordinates2InHomoVec3()
+ mVec3<T> mVec4<T>::HomoCordinates2InHomoVec3() const
 {
 	mVec4<T>tmp = (* this) / this->w;
 	return {tmp.x, tmp.y, tmp.z};
@@ -114,7 +114,7 @@ mVec4<T>::mVec4(mVec4<T>A, mVec4<T> B):
 }
 
 template<typename T>
-mVec4<T>::mVec4(float a, float b, float c, float cd) {
+mVec4<T>::mVec4(T  a, T  b, T  c, T cd) {
 	this->x = a;
 	this->y = b;
 	this->z = c;
@@ -123,8 +123,9 @@ mVec4<T>::mVec4(float a, float b, float c, float cd) {
 template<typename T>
 mVec4<T>::mVec4():x(0),y(0),z(0),w(0) {
 }
+
 template<typename T>
-mVec4<T>::mVec4(float d) {
+mVec4<T>::mVec4(T  d) {
 	this->x = d;
 	this->y = d;
 	this->z = d;
