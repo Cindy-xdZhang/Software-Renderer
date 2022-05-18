@@ -345,7 +345,8 @@ private:
 
     STRONG_INLINE  void VertexesProcess(const RenderableObject& yu);
 	STRONG_INLINE  void Rasterization(const RenderableObject& robj, framebuffer_t* Fb) const;
-	STRONG_INLINE mVec4f FragmentShading(const Triangle& TriInEyeSpace, const mVec3i& TriIdx, const mVec2<float>& uv, float interpolateZ, const RenderableObject& robj)const;
+	STRONG_INLINE mVec4f FragmentShading(const Triangle& TriInEyeSpace, const mVec3i& TriIdx, const mVec2<float>& uv, mVec3f& recip_w, const RenderableObject& robj)const;
+
 	float* depthbuffer = NULL;
 
 

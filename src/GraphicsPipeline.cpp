@@ -242,14 +242,6 @@ void GraphicsPipeline::VertexesProcess(const RenderableObject& yu) {
 }
 
 
-template<typename T>
-static inline T PerspetiveCorrectDepth(T iaz, T ibz, T icz, T uv_u, T uv_v) {
-
-	float interpolateIZ = iaz + uv_u * (icz - iaz) + uv_v * (ibz - iaz);//P = A + u * (C - A) + v * (B - A)  
-	float  interpolateZ = (1.0f / interpolateIZ);
-	return interpolateZ;
-}
-
 void GraphicsPipeline::Render(const std::vector<RenderableObject>& robjs1, const std::vector<RenderableObject>& robjs2, framebuffer_t* Fb) {
 	float* depthbuffer = Fb->depth_buffer;
 	assert(depthbuffer != NULL);
@@ -277,6 +269,24 @@ void GraphicsPipeline::Render(const std::vector<RenderableObject>& robjs1, const
 }
 
 
+//PerspetiveCorrect
+template<typename T>
+static T interpolate_varyings(
+	const T& src0, const T& src1, const T& src2, mVec3f weights, mVec3f recip_w) {
+
+	float weight0 = recip_w.x * weights.x;
+	float weight1 = recip_w.y * weights.y;
+	float weight2 = recip_w.z * weights.z;
+	float normalizer = 1 / (weight0 + weight1 + weight2);
+	
+	auto sum = src0 * weight0 + src1 * weight1 + src2 * weight2;
+	T dst = sum * normalizer;
+	return dst;
+}
+
+
+
+
 void GraphicsPipeline::Rasterization(const RenderableObject& robj,framebuffer_t* Fb) const
 {
 	auto myu = robj.Material();
@@ -293,11 +303,11 @@ void GraphicsPipeline::Rasterization(const RenderableObject& robj,framebuffer_t*
 	const Matrix4 PersViewPort = (Vp * Per);
 
 
-	//after perspective ortho viewport z=n+f/n-f - 2*f*n/z(n-f)
+	//after perspective ortho viewport z'=n+f/n-f +  2fn/z(f-n)
 	float n = _Camera.getNearPlane();
 	float f = _Camera.getFarPlane();
-	float depthA = (n + f) / (n - f);
-	float zcoord = f * n * 2;
+	float depthAffine = (n + f) / (n - f);
+	float ZCoeffcient = (f - n) /( f * n * 2);
 
 
 
@@ -309,24 +319,7 @@ void GraphicsPipeline::Rasterization(const RenderableObject& robj,framebuffer_t*
 	std::mutex buffer_mutex;
 	//Rasterization
 
-	auto EarlyZtest = [&](int x, int y, float z)->bool {
-		//mVec2<int> ScreenXY = { x, window_height - (y + 1) };
-		mVec2<int> ScreenXY = { y ,x };
-		//double distance = abs(z - _Camera.position.z);
-		//std::lock_guard<std::mutex> lock(buffer_mutex);
-		if (depthbuffer[ScreenXY.x * window_width + ScreenXY.y] >= z)
-		{
-			depthbuffer[ScreenXY.x * window_width + ScreenXY.y] = z;
-			return  true;
-		}
-		return false;
-
-	};
-
-
-	auto outputshading = [&](const fragment& TriFrag) {
-		//mVec2<int> ScreenXY = { TriFrag.XY.y ,TriFrag.XY.x };
-
+	auto ZBufferTest = [&](const fragment& TriFrag) {
 		{
 			//std::lock_guard<std::mutex> lock(buffer_mutex);
 			//look at -z direction, this depth is z in screen space 
@@ -350,33 +343,44 @@ void GraphicsPipeline::Rasterization(const RenderableObject& robj,framebuffer_t*
 		auto Eye_tri_b = vertex_coordinate_buffer[TriIndex.y];
 		auto Eye_tri_c = vertex_coordinate_buffer[TriIndex.z];
 
-		auto Tri_a = (PersViewPort * Eye_tri_a).HomoCordinates2InHomoVec3();
-		auto Tri_b = (PersViewPort * Eye_tri_b).HomoCordinates2InHomoVec3();
-		auto Tri_c = (PersViewPort * Eye_tri_c).HomoCordinates2InHomoVec3();
+		//screen space homo coordinate
+		auto Homo_tri_a = PersViewPort * Eye_tri_a;
+		auto Homo_tri_b = PersViewPort * Eye_tri_b;
+		auto Homo_tri_c = PersViewPort * Eye_tri_c;
 
-		Triangle TriInEyeSpace = { Eye_tri_a.tomVec3(),Eye_tri_b.tomVec3(),Eye_tri_c.tomVec3() };
-		Triangle  Tri = { Tri_a,Tri_b,Tri_c };
+		auto inv_w_a = 1 / Homo_tri_a.w;
+		auto inv_w_b = 1 / Homo_tri_b.w;
+		auto inv_w_c = 1 / Homo_tri_c.w;
+		mVec3f recip_w = {inv_w_a,inv_w_b,inv_w_c};
+		//screen space in homo coordinate
+		auto Tri_a = (Homo_tri_a * inv_w_a).tomVec3();
+		auto Tri_b = (Homo_tri_b * inv_w_b).tomVec3();
+		auto Tri_c = (Homo_tri_c * inv_w_c).tomVec3();
+
+		Triangle TriInEyeSpace = { Eye_tri_a.HomoCordinates2InHomoVec3(),Eye_tri_b.HomoCordinates2InHomoVec3(),Eye_tri_c.HomoCordinates2InHomoVec3() };
+
+		//after perspective ortho viewport z'=n+f/n-f +  2fn/z(f-n)
+		Triangle  Tri_ScreenSpace = { Tri_a,Tri_b,Tri_c };
 
 
 
 		int Xmin, Xmax, Ymin, Ymax;
-		Xmin = int(floorf(MIN(MIN(Tri.a.x, Tri.b.x), Tri.c.x)));
-		Xmax = int(ceilf(MAX(MAX(Tri.a.x, Tri.b.x), Tri.c.x)));
-		Ymin = int(floorf(MIN(MIN(Tri.a.y, Tri.b.y), Tri.c.y)));
-		Ymax = int(ceilf(MAX(MAX(Tri.a.y, Tri.b.y), Tri.c.y)));
+		Xmin = int(floorf(MIN(MIN(Tri_ScreenSpace.a.x, Tri_ScreenSpace.b.x), Tri_ScreenSpace.c.x)));
+		Xmax = int(ceilf(MAX(MAX(Tri_ScreenSpace.a.x, Tri_ScreenSpace.b.x), Tri_ScreenSpace.c.x)));
+		Ymin = int(floorf(MIN(MIN(Tri_ScreenSpace.a.y, Tri_ScreenSpace.b.y), Tri_ScreenSpace.c.y)));
+		Ymax = int(ceilf(MAX(MAX(Tri_ScreenSpace.a.y, Tri_ScreenSpace.b.y), Tri_ScreenSpace.c.y)));
 		if (Xmin > window_width || Xmax < 0)return;
 		if (Ymin > window_height || Ymax < 0)return;
-		/*	if (Xmin < 0 || Xmin >= window_width || Xmax < 0 || Xmax >= window_width)return;
-			if (Ymin < 0 || Ymin >= window_height || Ymax < 0 || Ymax >= window_height)return;*/
+	
 		Xmin = Xmin < 0 ? 0 : Xmin;
 		Ymin = Ymin < 0 ? 0 : Ymin;
 		Xmax = Xmax >= window_width ? window_width - 1 : Xmax;
 		Ymax = Ymax >= window_height ? window_height - 1 : Ymax;
 
 		//early-z
-		/*const float iaz = 1.0f / (Tri.a.z - depthA);
-		const float ibz = 1.0f / (Tri.b.z - depthA);
-		const float icz = 1.0f / (Tri.c.z - depthA);*/
+		const float iaz = Tri_ScreenSpace.a.z;// z'=n+f/n-f +  2fn/z(f-n)
+		const float ibz = Tri_ScreenSpace.b.z ;
+		const float icz = Tri_ScreenSpace.c.z ;
 
 		mVec2<float>FirstTime;
 		mVec2<float>Incremental_uv;
@@ -385,33 +389,30 @@ void GraphicsPipeline::Rasterization(const RenderableObject& robj,framebuffer_t*
 		for (int x = Xmin; x <= Xmax; x++) {
 			for (int y = Ymin; y <= Ymax; y++) {
 				if (y == Ymin) {
-					mVec2<float>  uv = Tri.PointIsInTriangle(mVec3f(x, y, 0));
+					mVec2<float>  uv = Tri_ScreenSpace.PointIsInTriangle(mVec3f(x + 0.5, y + 0.5, 0));
 					if (uv.x >= 0 && uv.y >= 0 && uv.x + uv.y <= 1) {
-						//float interpolatez = PerspetiveCorrectDepth(iaz, ibz, icz, uv.x, uv.y);
-						float interpolatez = Tri.a.z + uv.x * (Tri.c.z - Tri.b.z) + uv.y * (Tri.b.z - Tri.a.z);//P = A + u * (C - A) + v * (B - A)  ;
-						if constexpr (UseEarlyZ)
-							if (!EarlyZtest(x, y, interpolatez))continue;
-
-						mVec4f attibs = FragmentShading(TriInEyeSpace, TriIndex, uv, interpolatez, robj);
-						//RasterResult.emplace_back(attibs.w, mVec2<int>{x, y }, attibs.tomVec3f());
-						outputshading({ interpolatez, mVec2<int>{x, y }, attibs.tomVec3() });
+						float InterpolatedZ = iaz + uv.x * (ibz - iaz) + uv.y * (icz - iaz);
+						/* early depth testing */
+						if (InterpolatedZ >= depthbuffer[y * window_width + x]) {
+							mVec4f attibs = FragmentShading(TriInEyeSpace, TriIndex, uv, recip_w, robj);
+							//RasterResult.emplace_back(attibs.w, mVec2<int>{x, y }, attibs.tomVec3f());
+							ZBufferTest({ InterpolatedZ, mVec2<int>{x, y }, attibs.tomVec3() });
+						}
 
 					}
 					FirstTime = uv;
-
-
 				}
 				else if (y == Ymin + 1) {
-					mVec2<float>  uv = Tri.PointIsInTriangle(mVec3f(x, y, 0));
+					mVec2<float>  uv = Tri_ScreenSpace.PointIsInTriangle(mVec3f(x + 0.5, y + 0.5, 0));
 					if (uv.x >= 0 && uv.y >= 0 && uv.x + uv.y <= 1) {
+						float InterpolatedZ = iaz + uv.x * (ibz - iaz) + uv.y * (icz - iaz);
+						/* early depth testing */
+						if (InterpolatedZ >= depthbuffer[y * window_width + x]) {
+							mVec4f attibs = FragmentShading(TriInEyeSpace, TriIndex, uv, recip_w, robj);
+							//RasterResult.emplace_back(attibs.w, mVec2<int>{x, y }, attibs.tomVec3f());
+							ZBufferTest({ InterpolatedZ, mVec2<int>{x, y }, attibs.tomVec3() });
+						}
 
-						float interpolatez = Tri.a.z + uv.x * (Tri.c.z - Tri.b.z) + uv.y * (Tri.b.z - Tri.a.z);//P = A + u * (C - A) + v * (B - A)  ;
-						if constexpr (UseEarlyZ)
-							if (!EarlyZtest(x, y, interpolatez))continue;
-
-						mVec4f attibs = FragmentShading(TriInEyeSpace, TriIndex, uv, interpolatez, robj);
-						//RasterResult.emplace_back(attibs.w ,mVec2<int>{x, y } ,attibs.tomVec3f());
-						outputshading({ interpolatez, mVec2<int>{x, y }, attibs.tomVec3() });
 					}
 					Incremental_uv = uv - FirstTime;
 					Lastuv = uv;
@@ -420,23 +421,18 @@ void GraphicsPipeline::Rasterization(const RenderableObject& robj,framebuffer_t*
 					mVec2<float> uv = Lastuv + Incremental_uv;
 					Lastuv = uv;
 					if (uv.x >= 0 && uv.y >= 0 && uv.x + uv.y <= 1) {
-
-						float interpolatez = Tri.a.z + uv.x * (Tri.c.z - Tri.b.z) + uv.y * (Tri.b.z - Tri.a.z);//P = A + u * (C - A) + v * (B - A)  ;
-						if constexpr (UseEarlyZ)
-							if (!EarlyZtest(x, y, interpolatez))continue;
-
-						mVec4f attibs = FragmentShading(TriInEyeSpace, TriIndex, uv, interpolatez, robj);
-						//RasterResult.emplace_back(attibs.w, mVec2<int>{x, y }, attibs.tomVec3f());
-						outputshading({ interpolatez, mVec2<int>{x, y }, attibs.tomVec3() });
+						float InterpolatedZ = iaz + uv.x * (ibz - iaz) + uv.y * (icz - iaz);
+						/* early depth testing */
+						if (InterpolatedZ >= depthbuffer[y * window_width + x]) {
+							mVec4f attibs = FragmentShading(TriInEyeSpace, TriIndex, uv, recip_w, robj);
+							//RasterResult.emplace_back(attibs.w, mVec2<int>{x, y }, attibs.tomVec3f());
+							ZBufferTest({ InterpolatedZ, mVec2<int>{x, y }, attibs.tomVec3() });
+						}
 					}
 				}
 
 			}
 		}
-
-		//return 0;
-
-
 
 
 	};
@@ -455,8 +451,7 @@ void GraphicsPipeline::Rasterization(const RenderableObject& robj,framebuffer_t*
 }
 
 
-STRONG_INLINE mVec4f GraphicsPipeline::FragmentShading(const Triangle& TriInEyeSpace, const mVec3i& TriIdx, const mVec2<float>& uv, float interpolateZ, 
-	const RenderableObject& robj) const {
+STRONG_INLINE mVec4f GraphicsPipeline::FragmentShading(const Triangle& TriInEyeSpace, const mVec3i& TriIdx, const mVec2<float>& uv, mVec3f& recip_w, const RenderableObject& robj) const {
 	auto clamp = [](float in)->float {
 		return in > 1.0f ? 1.0f : (in < 0.0f ? 0.0f : in);
 	};
@@ -498,14 +493,15 @@ STRONG_INLINE mVec4f GraphicsPipeline::FragmentShading(const Triangle& TriInEyeS
 		mVec3f point = TriInEyeSpace.a * (1 - uv.x - uv.y) + (TriInEyeSpace.c * uv.x) + (TriInEyeSpace.b * uv.y);
 		tmp = ADSshading({ 0,0,0 }, LightSourceEyeSpace, point, normal, robj.Material());
 
-		mVec2<float> Texcoords = vtex_a + ((vtex_c - vtex_a) * uv.x + (vtex_b - vtex_a) * uv.y);
+		mVec2<float> Texcoords = interpolate_varyings<mVec2f>(vtex_a,vtex_b,vtex_c , { (1 - uv.x - uv.y),uv.x,uv.y }, recip_w);
+			
+
 		//stripe texture
 		if (texChannel == 1) {
 			mVec3f backcolor = { 0,0,0 };
 			float scale = texture_scaling;
 			float fuzz = 2;
 			float width = 10;
-			Texcoords = Texcoords * interpolateZ;
 			float scaleT = fract(Texcoords.y * scale);
 
 			float frac1 = clamp(scaleT / fuzz);
@@ -518,7 +514,6 @@ STRONG_INLINE mVec4f GraphicsPipeline::FragmentShading(const Triangle& TriInEyeS
 		}
 		else if (texChannel >= 2) {
 			float scale = texture_scaling;
-			Texcoords = Texcoords * interpolateZ;
 			Texcoords.x = fract(Texcoords.x * scale);
 			Texcoords.y = fract(Texcoords.y * scale);
 			mVec3f backcolor = LookupTexel(Texcoords, texChannel - 2);
@@ -561,7 +556,7 @@ GraphicsPipeline::GraphicsPipeline(int h, int w) : window_height(h), window_widt
 	//mTextures.emplace_back(LoadTexture());
 
 	_Camera = Camera(InitEyePos, InitGazeDirection, InitTopDirection);
-	_Camera.SetFrustm(1, -1, -1, 1, 45.0f, InitEyePos.z + 400);
+	_Camera.SetFrustm(1, -1, -1.0,1.0, 45.0f, InitEyePos.z + 400);
 
 	//pre-allocate memory:
 	//FragmentsAfterRasterization.resize(4096);

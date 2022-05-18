@@ -13,7 +13,8 @@ static const std::string AssetsNames[] = {
 	"crab.bmp",
      "Dream.bmp",
     "brick1.bmp",
-	 "sky.bmp"
+	 "sky.bmp",
+	 "tree_obj.obj"
 };
 static MyTimer timer;
 
@@ -224,7 +225,6 @@ void Viewer::init_callbacks( ) {
 			m_g_pip->window_width= NEW_REC.right- NEW_REC.left+ 1;
 			m_framebuffer->resize_buffer(m_g_pip->window_width, m_g_pip->window_height);
 			mArcControl.updateWH(m_g_pip->window_width, m_g_pip->window_height);
-
 		};
 
 
@@ -252,12 +252,13 @@ void Viewer::init_demo_scene() {
 	Cube origin;
 	land.setModelMatrix(scaleMatrix(0.25f));
 	origin.fixit();
-	Cube skybox;
-	skybox.setModelMatrix(scaleMatrix(620.0f));
-	skybox.texturechannelID = 3;
 
-	skybox.fixit();
-	m_FixObjects->push_back(std::move(skybox));
+	//perspective correction is not working for skybox
+	//Cube skybox;
+	//skybox.setModelMatrix(scaleMatrix(640.0f));
+	//skybox.texturechannelID = 3;
+	//skybox.fixit();
+	//m_FixObjects->push_back(std::move(skybox));
 	m_FixObjects->push_back(std::move(origin));
 	m_FixObjects->push_back(std::move(land));
 
@@ -279,7 +280,7 @@ void Viewer::init_demo_scene() {
 	obj.ModleMatrix *= translateMatrix(mVec3f(50, -0, -0));*/
 
 	m_mutable_objects->push_back(std::move(obj_crab));
-	m_mutable_objects->push_back(std::move(obj_beacon));
+	//m_mutable_objects->push_back(std::move(obj_beacon));
 
 	m_g_pip->LoadTexture(Path_texture);
 	m_g_pip->LoadTexture(Path_texture_sky);
